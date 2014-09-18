@@ -5,8 +5,7 @@ import akka.contrib.pattern.DistributedPubSubExtension
 import akka.contrib.pattern.DistributedPubSubMediator.Publish
 import com.typesafe.config.ConfigFactory
 import org.json4s.{DefaultFormats, Formats}
-import shortenurl.actor.InvalidToken
-import shortenurl.domain.model.CodeAlreadyTaken
+import shortenurl.domain.model.Error
 import spray.http.StatusCodes._
 import spray.httpx.Json4sSupport
 import spray.routing.RequestContext
@@ -48,14 +47,9 @@ class LinkServiceCtxHandler(val ctx: RequestContext) extends Actor with Json4sSu
       context.setReceiveTimeout(Duration.Undefined)
       context.stop(self)
 
-    case InvalidToken =>
+    case Left(Error(msg)) =>
       context.setReceiveTimeout(Duration.Undefined)
-      ctx.complete("Invalid Token")
-      context.stop(self)
-
-    case Left(CodeAlreadyTaken) =>
-      context.setReceiveTimeout(Duration.Undefined)
-      ctx.complete("Code Already Taken")
+      ctx.complete(msg)
       context.stop(self)
 
     case Right(shortenurl.domain.model.Link(_, url, code, _)) =>

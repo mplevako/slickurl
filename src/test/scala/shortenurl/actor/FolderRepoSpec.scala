@@ -8,7 +8,7 @@ import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import org.specs2.time.NoTimeConversions
-import shortenurl.domain.model.{Folder, User}
+import shortenurl.domain.model.{Error, ErrorCode, Folder, User}
 import shortenurl.domain.repository.FolderRepositoryComponent
 
 import scala.concurrent.duration._
@@ -38,7 +38,7 @@ class FolderRepoSpec extends Specification with NoTimeConversions with Mockito {
       val replyToTestProbe = TestProbe()
       val replyTo = replyToTestProbe.ref
       folderRepo ! UserForToken(None, replyTo, None)
-      replyToTestProbe.expectMsg(InvalidToken)
+      replyToTestProbe.expectMsg(Error(ErrorCode.InvalidToken))
     }
 
     "return a non-empty list for an existent token" in new AkkaTestkitSpecs2Support with Mocks {

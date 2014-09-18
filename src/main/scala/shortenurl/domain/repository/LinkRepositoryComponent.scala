@@ -1,7 +1,7 @@
 package shortenurl.domain.repository
 
 import com.typesafe.config.ConfigFactory
-import shortenurl.domain.model.{CodeAlreadyTaken, Link}
+import shortenurl.domain.model.{Error, ErrorCode, Link}
 import shortenurl.urlcodec.URLCodec
 
 trait LinkRepositoryComponent { this: LinkTable =>
@@ -11,26 +11,33 @@ trait LinkRepositoryComponent { this: LinkTable =>
 
   trait LinkRepository {
     //returns CodeIsUsed if link.code is already used for this user + url + folder combination
-    def shortenUrl(link: Link): Either[CodeAlreadyTaken.type, Link]
+    def shortenUrl(link: Link): Either[Error, Link]
   }
 
   class LinkRepositoryImpl extends LinkRepository {
 
     import profile.simple._
 
-    //lookup a code for a given user + url + code + folder combination
-    private def lookupCode(uid: Long, url: String, code: Option[String], folderId: Option[Long]): Option[Link] = code match {
-      case None    => None
+    private def codeExists(code: Option[String]): Boolean = code match {
+      case None    => false
       case Some(c) => db withSession { implicit session =>
-          links.filter(l => {l.uid === uid && l.url === url && l.fid === folderId && l.code === code}).firstOption
+          links.filter(_.code === code).map(_.code).exists.run
       }
     }
 
-    //returns CodeIsUsed if link.code is already used for this user + url + folder combination
-    override def shortenUrl(link: Link): Either[CodeAlreadyTaken.type, Link] =
-      lookupCode(link.uid, link.url, link.code, link.folderId) match {
-        case None => link.code match {
-          case Some(code)=> db withTransaction { implicit session =>
+    private def folderExists(folderId: Long): Boolean =
+      db withTransaction { implicit session =>
+        folders.filter(_.id === folderId).map(_.id).exists.run
+      }
+
+    //returns CodeIsUsed if link.code is already used for this user + code + folder combination
+    override def shortenUrl(link: Link): Either[Error, Link] = {
+      val folderId = link.folderId
+      if (folderId.nonEmpty && !folderExists(folderId.get)) Left(Error(ErrorCode.InvalidFolder))
+      else if (codeExists(link.code)) Left(Error(ErrorCode.CodeTaken))
+      else {
+        link.code match {
+          case Some(code) => db withTransaction { implicit session =>
             links.insert(link)
             Right(link)
           }
@@ -42,7 +49,7 @@ trait LinkRepositoryComponent { this: LinkTable =>
             Right(shortLink)
           }
         }
-        case Some(_) => Left(CodeAlreadyTaken)
       }
+    }
   }
 }

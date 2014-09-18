@@ -3,7 +3,7 @@ package shortenurl.domain
 import org.specs2.execute.{AsResult, Result}
 import org.specs2.mutable.Specification
 import org.specs2.specification.{AroundExample, BeforeAfterExample}
-import shortenurl.domain.model.{CodeAlreadyTaken, Folder, Link}
+import shortenurl.domain.model.{Error, Folder, Link}
 import shortenurl.domain.repository.{FolderTable, LinkRepositoryComponent, LinkTable}
 
 import scala.slick.driver.JdbcProfile
@@ -17,7 +17,7 @@ class LinkRepositorySpec extends Specification with AroundExample with BeforeAft
   ".shortenUrl" should {
     "return CodeAlreadyUsed when the code is already used" in {
       val e = linkRepository.shortenUrl(existentLink)
-      e must beLeft[CodeAlreadyTaken.type]
+      e must beLeft[Error]
     }
 
     "keep the code if possible" in {

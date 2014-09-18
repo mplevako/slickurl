@@ -10,7 +10,7 @@ trait LinkTable extends FolderTable {
 
   class Links(tag: Tag) extends Table[Link](tag, "LINK") {
 
-    def id    = column[Long] ("ID", O.PrimaryKey)
+    def id    = column[Long] ("ID", O.PrimaryKey, O.AutoInc)
     def uid   = column[Long] ("UID", O.NotNull)
     def fid   = column[Option[Long]] ("FID", O.Nullable)
     def url   = column[String] ("URL", O.NotNull)

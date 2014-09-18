@@ -5,7 +5,8 @@ import akka.contrib.pattern.DistributedPubSubExtension
 import akka.contrib.pattern.DistributedPubSubMediator.Publish
 import com.typesafe.config.ConfigFactory
 import org.json4s.{DefaultFormats, Formats}
-import shortenurl.actor.{Folders, InvalidToken}
+import shortenurl.actor.Folders
+import shortenurl.domain.model.Error
 import spray.http.StatusCodes._
 import spray.httpx.Json4sSupport
 import spray.routing.RequestContext
@@ -46,9 +47,9 @@ class FolderServiceCtxHandler(val ctx: RequestContext) extends Actor with Json4s
       context.setReceiveTimeout(Duration.Undefined)
       context.stop(self)
 
-    case InvalidToken =>
+    case Error(msg) =>
       context.setReceiveTimeout(Duration.Undefined)
-      ctx.complete("Invalid Token")
+      ctx.complete(msg)
       context.stop(self)
 
     case Folders(folders) =>

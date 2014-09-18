@@ -8,7 +8,7 @@ import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import org.specs2.time.NoTimeConversions
-import shortenurl.domain.model.{Link, User}
+import shortenurl.domain.model.{Error, ErrorCode, Link, User}
 import shortenurl.domain.repository.LinkRepositoryComponent
 
 import scala.concurrent.duration._
@@ -39,7 +39,7 @@ class LinkRepoSpec extends Specification with NoTimeConversions with Mockito {
       val replyToTestProbe = TestProbe()
       val replyTo = replyToTestProbe.ref
       linkRepo ! UserForToken(None, replyTo, None)
-      replyToTestProbe.expectMsg(InvalidToken)
+      replyToTestProbe.expectMsg(Error(ErrorCode.InvalidToken))
     }
 
     "return a shorten link if token is valid" in new AkkaTestkitSpecs2Support with Mocks {

@@ -3,7 +3,7 @@ package shortenurl.actor
 import akka.actor.{Actor, IndirectActorProducer}
 import akka.contrib.pattern.DistributedPubSubExtension
 import akka.contrib.pattern.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck}
-import shortenurl.domain.model.Link
+import shortenurl.domain.model.{Error, ErrorCode, Link}
 import shortenurl.domain.repository.LinkRepositoryComponent
 
 trait LinkRepo extends Actor {
@@ -24,7 +24,7 @@ trait LinkRepo extends Actor {
       val payload = Some(Link(-1L, url, code, folderId))
       mediator ! Publish(`userRepoTopic`, GetUserWithToken(token, replyTo, Some(self), payload))
     case UserForToken(user, replyTo, payLoad) => user match {
-      case None                => replyTo ! InvalidToken
+      case None                => replyTo ! Error(ErrorCode.InvalidToken)
       case Some(userWithToken) =>
         val shortLink = payLoad.get.asInstanceOf[Link].copy(uid = userWithToken.id)
         replyTo ! linkRepository.shortenUrl(shortLink)
