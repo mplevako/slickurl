@@ -7,9 +7,9 @@ trait UserRepositoryComponent { this: UserTable =>
   val userRepository: UserRepository
 
   trait UserRepository {
-    def findById(id: Int): Option[User]
+    def findById(id: Long): Option[User]
     def userForToken(token: String): Option[User]
-    def getUser(id: Int): User
+    def getUser(id: Long): User
   }
 
   class UserRepositoryImpl extends UserRepository {
@@ -25,7 +25,7 @@ trait UserRepositoryComponent { this: UserTable =>
 
     private def generateToken = randomAlphanumericString(64)
 
-    override def findById(id: Int): Option[User] =
+    override def findById(id: Long): Option[User] =
       db withSession { implicit session =>
         users.filter(_.id === id).firstOption
       }
@@ -35,7 +35,7 @@ trait UserRepositoryComponent { this: UserTable =>
         users.filter(_.token === token).firstOption
       }
 
-    override def getUser(id: Int): User =
+    override def getUser(id: Long): User =
       db withTransaction { implicit session =>
         findById(id) match {
           case None =>

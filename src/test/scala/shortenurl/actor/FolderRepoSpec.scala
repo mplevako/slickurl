@@ -11,6 +11,8 @@ import org.specs2.time.NoTimeConversions
 import shortenurl.domain.model.{Folder, User}
 import shortenurl.domain.repository.FolderRepositoryComponent
 
+import scala.concurrent.duration._
+
 class FolderRepoSpec extends Specification with NoTimeConversions with Mockito {
 
   sequential
@@ -47,7 +49,7 @@ class FolderRepoSpec extends Specification with NoTimeConversions with Mockito {
       val replyToTestProbe = TestProbe()
       val replyTo = replyToTestProbe.ref
       folderRepo ! UserForToken(Some(existentUser), replyTo)
-      replyToTestProbe.expectMsg(folders)
+      replyToTestProbe.expectMsg(5 seconds, folders)
     }
   }
 

@@ -5,7 +5,7 @@ import akka.contrib.pattern.DistributedPubSubExtension
 import akka.contrib.pattern.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck}
 import shortenurl.domain.repository.FolderRepositoryComponent
 
-case class ListFolders(token: String, replyTo: ActorRef)
+private[shortenurl] case class ListFolders(token: String, replyTo: ActorRef)
 
 trait FolderRepo extends Actor {
   val folderRepoTopic = context.system.settings.config.getString("folder.repo.topic")

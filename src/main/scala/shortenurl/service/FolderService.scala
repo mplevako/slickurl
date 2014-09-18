@@ -13,7 +13,7 @@ import scala.concurrent.duration._
 
 case class ListFolders(token: String)
 
-case class Folder(id: Int, title: String)
+case class Folder(id: Long, title: String)
 
 trait FolderService extends ShortenerService {
 

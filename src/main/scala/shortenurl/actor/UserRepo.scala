@@ -6,10 +6,10 @@ import akka.contrib.pattern.DistributedPubSubMediator.{Subscribe, SubscribeAck}
 import shortenurl.domain.model.User
 import shortenurl.domain.repository.UserRepositoryComponent
 
-case class GetUser(userId: Int, secret: String, replyTo: ActorRef)
+private[shortenurl] case class GetUser(userId: Long, secret: String, replyTo: ActorRef)
 
-case class GetUserWithToken(token: String, replyTo: ActorRef, replyVia: Option[ActorRef])
-case class UserForToken(uid: Option[User], replyTo: ActorRef)
+private[shortenurl] case class GetUserWithToken(token: String, replyTo: ActorRef, replyVia: Option[ActorRef])
+private[shortenurl] case class UserForToken(uid: Option[User], replyTo: ActorRef)
 
 trait UserRepo extends Actor {
   val userRepoTopic = context.system.settings.config.getString("user.repo.topic")

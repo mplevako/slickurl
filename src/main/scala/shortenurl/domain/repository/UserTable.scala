@@ -8,7 +8,7 @@ trait UserTable extends Profile {
 
   class Users(tag: Tag) extends Table[User](tag, "USER") {
 
-    def id    = column[Int] ("ID", O.PrimaryKey)
+    def id    = column[Long] ("ID", O.PrimaryKey)
     def token = column[String]("TOKEN", O.NotNull, O.DBType("VARCHAR(64)"))
 
     def * = (id, token) <> (User.tupled, User.unapply)

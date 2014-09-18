@@ -8,8 +8,8 @@ trait FolderTable extends Profile {
 
   class Folders(tag: Tag) extends Table[Folder](tag, "FOLDER") {
 
-    def id    = column[Int]("ID", O.PrimaryKey)
-    def uid   = column[Int]("UID", O.NotNull)
+    def id    = column[Long]("ID", O.PrimaryKey)
+    def uid   = column[Long]("UID", O.NotNull)
     def title = column[String]("TITLE", O.NotNull)
 
     def * = (id, uid, title) <> (Folder.tupled, Folder.unapply)
