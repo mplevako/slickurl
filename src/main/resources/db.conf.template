@@ -1,0 +1,8 @@
+db {
+  users {
+    user        = <user>
+    password    = <pwd>
+    url         = "jdbc:postgresql://<host>:<port>/<db>"
+    driverClass = "org.postgresql.Driver"
+  }
+}
