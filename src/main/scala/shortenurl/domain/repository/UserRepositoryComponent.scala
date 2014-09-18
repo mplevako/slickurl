@@ -8,6 +8,7 @@ trait UserRepositoryComponent { this: UserTable =>
 
   trait UserRepository {
     def findById(id: Int): Option[User]
+    def userForToken(token: String): Option[User]
     def getUser(id: Int): User
   }
 
@@ -27,6 +28,11 @@ trait UserRepositoryComponent { this: UserTable =>
     override def findById(id: Int): Option[User] =
       db withSession { implicit session =>
         users.filter(_.id === id).firstOption
+      }
+
+    override def userForToken(token: String): Option[User] =
+      db withSession { implicit session =>
+        users.filter(_.token === token).firstOption
       }
 
     override def getUser(id: Int): User =

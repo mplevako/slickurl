@@ -2,6 +2,7 @@ package shortenurl.service
 
 import akka.actor.ActorRef
 import akka.util.Timeout
+import com.typesafe.config.ConfigFactory
 import org.json4s.{DefaultFormats, Formats}
 import spray.httpx.Json4sSupport
 import spray.routing.HttpService
@@ -14,4 +15,6 @@ trait ShortenerService extends HttpService with Json4sSupport {
   implicit val timeout = Timeout(10 seconds)
   implicit val executionContext = actorRefFactory.dispatcher
   override implicit val json4sFormats: Formats = DefaultFormats
+
+  val config = ConfigFactory.load()
 }

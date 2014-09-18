@@ -8,7 +8,8 @@ import shortenurl.domain.repository.{UserRepositoryComponent, UserTable}
 
 import scala.slick.driver.JdbcProfile
 
-class UserRepositorySpec extends Specification with AroundExample with BeforeAfterExample with UserRepositoryComponent with UserTable{
+class UserRepositorySpec extends Specification with AroundExample with BeforeAfterExample
+                                 with UserRepositoryComponent with UserTable{
 
   sequential
 
@@ -22,6 +23,19 @@ class UserRepositorySpec extends Specification with AroundExample with BeforeAft
 
     "return None if there is no User with the given id" in {
       userRepository.findById(-1) must beNone
+    }
+  }
+
+  ".findByToken" should {
+
+    "return an Option containing the expected User with the given token" in {
+      val user = userRepository.userForToken(testUser.token)
+      user must beSome[User]
+      user.get.id must_== testUser.id
+    }
+
+    "return None if there is no User with the given token" in {
+      userRepository.userForToken("bad") must beNone
     }
   }
 
