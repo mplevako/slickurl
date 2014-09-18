@@ -5,32 +5,30 @@ import akka.contrib.pattern.DistributedPubSubExtension
 import akka.contrib.pattern.DistributedPubSubMediator.Publish
 import com.typesafe.config.ConfigFactory
 import shortenurl.domain.model.User
-import spray.http.StatusCodes._
 import spray.routing.RequestContext
+import spray.routing.directives.DetachMagnet
 
 import scala.concurrent.duration._
 
-case class GetUser(user_id: Int, secret: String)
+private[shortenurl] case class GetUser(user_id: Int, secret: String)
 
 trait UserService extends ShortenerService {
 
   val userRepoTopic = config.getString("user.repo.topic")
 
-  val rejectUserRoute = path("token") {
-    (/*post | */put | delete | head | options | patch) (complete(MethodNotAllowed))
-  }
-
   val userRoute = {
     path("token") {
-      entity(as[GetUser]) { getUser: GetUser =>
-        post { ctx =>
-          val replyTo = actorRefFactory.actorOf(Props(classOf[UserServiceCtxHandler], ctx))
-          mediator ! Publish(`userRepoTopic`, shortenurl.actor.GetUser(getUser.user_id, getUser.secret, replyTo))
+      get {
+        entity(as[GetUser]) { getUser: GetUser =>
+            detach(DetachMagnet.fromUnit()) { ctx =>
+              val replyTo = actorRefFactory.actorOf(Props(classOf[UserServiceCtxHandler], ctx))
+              mediator ! Publish(`userRepoTopic`, shortenurl.actor.GetUser(getUser.user_id, getUser.secret, replyTo))
+            }
         }
       }
     }
   }
-}
+}  
 
 class UserServiceCtxHandler(val ctx: RequestContext) extends Actor {
   context.setReceiveTimeout(ConfigFactory.load().getInt("app.http.handler.timeout") milliseconds)

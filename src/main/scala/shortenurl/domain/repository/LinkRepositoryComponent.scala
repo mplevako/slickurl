@@ -12,6 +12,7 @@ trait LinkRepositoryComponent { this: LinkTable =>
   trait LinkRepository {
     //returns CodeIsUsed if link.code is already used for this user + url + folder combination
     def shortenUrl(link: Link): Either[Error, Link]
+    def listLinks(userId: Long, folderId: Long, offset: Long = 0, limit: Option[Long]): List[Link]
   }
 
   class LinkRepositoryImpl extends LinkRepository {
@@ -51,5 +52,15 @@ trait LinkRepositoryComponent { this: LinkTable =>
         }
       }
     }
+
+    override def listLinks(userId: Long, folderId: Long, offset: Long,
+                           limit: Option[Long]): List[Link] =
+      db withSession { implicit session =>
+        val linksForFolder = links.filter(_.uid === userId).filter(_.fid === folderId).drop(offset)
+        limit match {
+          case None    => linksForFolder.list
+          case Some(n) => linksForFolder.take(n).list
+        }
+      }
   }
 }

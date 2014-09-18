@@ -7,6 +7,7 @@ case class Link(uid: Long, url: String, code: Option[String], folderId: Option[L
 case class Error(errorCode: String)
 
 object ErrorCode {
+  val Unknown       = "unknown"
   val InvalidToken  = "invalid_token"
   val InvalidFolder = "invalid_folder"
   val CodeTaken     = "code_taken"

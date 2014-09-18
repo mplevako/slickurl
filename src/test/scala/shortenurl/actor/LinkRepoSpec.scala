@@ -49,7 +49,8 @@ class LinkRepoSpec extends Specification with NoTimeConversions with Mockito {
 
       val replyToTestProbe = TestProbe()
       val replyTo = replyToTestProbe.ref
-      linkRepo ! UserForToken(Some(existentUser), replyTo, Some(link))
+      val shortenLink = ShortenLink("token", "url", None, None, replyTo)
+      linkRepo ! UserForToken(Some(existentUser), replyTo, Some(shortenLink))
       replyToTestProbe.expectMsg(5 seconds, Right(link))
       there was one(repoMock).shortenUrl(link)
     }

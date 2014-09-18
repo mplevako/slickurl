@@ -13,11 +13,10 @@ trait FolderRepositoryComponent { this: FolderTable =>
   class FolderRepositoryImpl extends FolderRepository {
     import profile.simple._
 
-    override def listFolders(uid: Long): List[Folder] = {
+    override def listFolders(uid: Long): List[Folder] =
       db withSession { implicit session =>
         folders.filter(_.uid === uid).list
       }
-    }
   }
 }
 
