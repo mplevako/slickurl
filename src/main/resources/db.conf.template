@@ -2,7 +2,14 @@ db {
   users {
     user        = <user>
     password    = <pwd>
-    url         = "jdbc:postgresql://<host>:<port>/<db>"
+    url         = "jdbc:postgresql://<host>:<port>/<userdb>"
+    driverClass = "org.postgresql.Driver"
+  }
+
+  folders {
+    user        = <user>
+    password    = <pwd>
+    url         = "jdbc:postgresql://<host>:<port>/<folderdb>"
     driverClass = "org.postgresql.Driver"
   }
 }
