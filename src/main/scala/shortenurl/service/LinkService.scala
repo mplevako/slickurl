@@ -31,7 +31,7 @@ trait LinkService extends ShortenerService {
                                   shortenLink.url, shortenLink.code, shortenLink.folder_id, replyTo))
             }
         }
-      }
+      } ~
       get {
         entity(as[ListLinks]) { listLinks: ListLinks =>
             detach(DetachMagnet.fromUnit()) { ctx =>
