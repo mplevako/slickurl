@@ -12,7 +12,7 @@ trait LinkRepositoryComponent { this: LinkTable =>
   trait LinkRepository {
     //returns CodeIsUsed if link.code is already used for this user + url + folder combination
     def shortenUrl(link: Link): Either[Error, Link]
-    def listLinks(userId: Long, folderId: Long, offset: Long = 0, limit: Option[Long]): List[Link]
+    def listLinks(userId: Long, folderId: Option[Long], offset: Long = 0, limit: Option[Long]): List[Link]
   }
 
   class LinkRepositoryImpl extends LinkRepository {
@@ -26,37 +26,39 @@ trait LinkRepositoryComponent { this: LinkTable =>
       }
     }
 
-    private def folderExists(folderId: Long): Boolean =
+    private def folderExists(uid: Long, folderId: Long): Boolean =
       db withTransaction { implicit session =>
-        folders.filter(_.id === folderId).map(_.id).exists.run
+        folders.filter(_.uid === uid).filter(_.id === folderId).map(_.id).exists.run
       }
 
     //returns CodeIsUsed if link.code is already used for this user + code + folder combination
     override def shortenUrl(link: Link): Either[Error, Link] = {
       val folderId = link.folderId
-      if (folderId.nonEmpty && !folderExists(folderId.get)) Left(Error(ErrorCode.InvalidFolder))
+      if (folderId.nonEmpty && !folderExists(link.uid, folderId.get)) Left(Error(ErrorCode.InvalidFolder))
       else if (codeExists(link.code)) Left(Error(ErrorCode.CodeTaken))
       else {
         link.code match {
           case Some(code) => db withTransaction { implicit session =>
-            links.insert(link)
+            links.forceInsert(link)
             Right(link)
           }
           case None => db withTransaction { implicit session =>
             //val nextCode = codeSequence.next.run
             val nextCode = codeSequence.next.firstOption.getOrElse(-1L)
             val shortLink = link.copy(code = Some(URLCodec.encode(shortUrlAlphabet, nextCode)))
-            links.insert(shortLink)
+            links.forceInsert(shortLink)
             Right(shortLink)
           }
         }
       }
     }
 
-    override def listLinks(userId: Long, folderId: Long, offset: Long,
+    override def listLinks(userId: Long, folderId: Option[Long], offset: Long = 0,
                            limit: Option[Long]): List[Link] =
       db withSession { implicit session =>
-        val linksForFolder = links.filter(_.uid === userId).filter(_.fid === folderId).drop(offset)
+        var linksForFolder = links.filter(_.uid === userId)
+        if(folderId.nonEmpty) linksForFolder.filter(_.fid === folderId)
+        linksForFolder = linksForFolder.drop(offset)
         limit match {
           case None    => linksForFolder.list
           case Some(n) => linksForFolder.take(n).list

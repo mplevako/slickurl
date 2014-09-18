@@ -34,12 +34,37 @@ class LinkRepositorySpec extends Specification with AroundExample with BeforeAft
     }
   }
 
+  ".listLinks" should {
+    "list all link for the given user if no folder id is specified" in {
+      val linkWithCode = nonExistentLink.copy(code = Some("cafebabe"))
+      val links = linkRepository.listLinks(1, None, 0, None)
+      links must not(beEmpty)
+      links.size must_== 3
+
+      val ofsLinks = linkRepository.listLinks(1, None, 1, None)
+      ofsLinks must not(beEmpty)
+      ofsLinks.size must_== 2
+
+      val ofsLimLinks = linkRepository.listLinks(1, None, 1, Some(1))
+      ofsLimLinks must not(beEmpty)
+      ofsLimLinks.size must_== 1
+      ofsLimLinks.head.code must beSome[String]
+      ofsLimLinks.head.code.get must_== "b"
+    }
+
+    "return a short link if the given code is empty" in {
+      val e = linkRepository.shortenUrl(nonExistentLink)
+      e must beRight[Link]
+      e.right.get must_== nonExistentLink.copy(code = Some(encodedIntMaxVal))
+    }
+  }
+
   override val profile: JdbcProfile = scala.slick.driver.H2Driver
   override val linkRepository: LinkRepository = new LinkRepositoryImpl
   override val db: JdbcProfile#Backend#Database = profile.simple.Database.forURL("jdbc:h2:mem:links", driver = "org.h2.Driver")
 
-  val existentFolder: Folder = Folder(1, 1, "Beef Links")
-  val existentLink: Link = Link(1, "https://www.google.com", Some("dEaDbEeF"), Some(1))
+  val existentFolder: Folder = Folder(1, 1, "A")
+  val existentLink: Link = Link(1, "https://www.google.com", Some("a"), Some(1))
   val nonExistentLink: Link = Link(1, "https://www.google.com", None, Some(1))
   val encodedIntMaxVal = "dIA5IR"
 
@@ -49,8 +74,20 @@ class LinkRepositorySpec extends Specification with AroundExample with BeforeAft
     (folders.ddl ++ links.ddl).create
     StaticQuery.updateNA(s"create sequence codeseq increment 1 start ${Int.MaxValue}").execute
 
-    folders.forceInsert(existentFolder)
-    links.forceInsert(existentLink)
+    folders.forceInsertAll(
+      existentFolder,
+      Folder(2, 1, "B"),
+      Folder(3, 2, "C"),
+      Folder(4, 3, "D")
+    )
+
+    links.forceInsertAll(
+      existentLink,
+      Link(1,"test",Some("b"),Some(1)),
+      Link(2,"test",Some("c"),Some(2)),
+      Link(1,"test",Some("d"),Some(3)),
+      Link(3,"test",Some("e"),Some(4))
+    )
   }
 
   override def after: Any = db withSession { implicit session =>

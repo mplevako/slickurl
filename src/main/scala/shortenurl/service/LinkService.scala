@@ -17,7 +17,6 @@ private[shortenurl] case class ShortenLink(token: String, url: String, code: Opt
 private[shortenurl] case class ListLinks(token: String, offset: Long = 0L, limit: Option[Long])
 private[shortenurl] case class Link(url: String, code: String)
 
-
 trait LinkService extends ShortenerService {
 
   val linkRepoTopic = config.getString("link.repo.topic")
@@ -33,6 +32,15 @@ trait LinkService extends ShortenerService {
             }
         }
       }
+      get {
+        entity(as[ListLinks]) { listLinks: ListLinks =>
+            detach(DetachMagnet.fromUnit()) { ctx =>
+                val replyTo = actorRefFactory.actorOf(Props(classOf[LinkServiceCtxHandler], ctx))
+                mediator ! Publish(`linkRepoTopic`, shortenurl.actor.ListLinks(listLinks.token,
+                                   None, listLinks.offset, listLinks.limit, replyTo))
+            }
+        }
+      }
     } ~
     path("folder" / LongNumber) { folderId =>
       get {
@@ -40,9 +48,9 @@ trait LinkService extends ShortenerService {
             detach(DetachMagnet.fromUnit()) { ctx =>
                 val replyTo = actorRefFactory.actorOf(Props(classOf[LinkServiceCtxHandler], ctx))
                 mediator ! Publish(`linkRepoTopic`, shortenurl.actor.ListLinks(listLinks.token,
-                                   folderId, listLinks.offset, listLinks.limit, replyTo))
+                                   Some(folderId), listLinks.offset, listLinks.limit, replyTo))
             }
-         }
+        }
       }
     }
   }
