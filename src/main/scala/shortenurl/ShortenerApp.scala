@@ -5,8 +5,8 @@ import akka.contrib.pattern.DistributedPubSubExtension
 import akka.io.IO
 import akka.routing.RoundRobinRouter
 import com.typesafe.config.ConfigFactory
-import shortenurl.actor.{FolderRepoFactory, Shortener, UserRepoFactory}
-import shortenurl.domain.repository.{FolderRepositoryComponent, FolderTable, UserRepositoryComponent, UserTable}
+import shortenurl.actor.{FolderRepoFactory, LinkRepoFactory, Shortener, UserRepoFactory}
+import shortenurl.domain.repository._
 import spray.can.Http
 
 import scala.slick.driver.JdbcProfile
@@ -18,7 +18,7 @@ object ShortenerApp extends App {
   //start the cluster
   implicit val system = ActorSystem("ShortenerSystem", config)
   new UserRepositoryApp
-  new FolderRepositoryApp()
+  new LinkRepositoryApp
 
   //start the server
   val mediator = DistributedPubSubExtension(system).mediator
@@ -44,20 +44,30 @@ class UserRepositoryApp(implicit val system: ActorSystem) extends UserRepository
   system.actorOf(Props(classOf[UserRepoFactory], userRepository), name = "user-repo")
 }
 
-class FolderRepositoryApp(implicit val system: ActorSystem) extends FolderRepositoryComponent
-                                                                    with  FolderTable {
+class LinkRepositoryApp(implicit val system: ActorSystem) extends LinkRepositoryComponent with FolderRepositoryComponent
+                                                                  with LinkTable with FolderTable{
 
   override val profile: JdbcProfile = scala.slick.driver.PostgresDriver
   override val db: JdbcProfile#Backend#Database = profile.simple.Database.forConfig("db.folders")
   override val folderRepository: FolderRepository = new FolderRepositoryImpl
+  override val linkRepository: LinkRepository = new LinkRepositoryImpl
 
   import profile.simple._
   db withSession { implicit session =>
     if (MTable.getTables("FOLDER").list.isEmpty) {
       folders.ddl.create
     }
+
+    if (MTable.getTables("LINK").list.isEmpty) {
+//      (links.ddl ++ codeSequence.ddl).create
+      links.ddl.create
+      codeSequence.ddl.execute
+    }
   }
 
   //start the folders repo
   system.actorOf(Props(classOf[FolderRepoFactory], folderRepository), name = "folder-repo")
+
+  //start the links repo
+  system.actorOf(Props(classOf[LinkRepoFactory], linkRepository), name = "link-repo")
 }

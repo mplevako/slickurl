@@ -17,13 +17,13 @@ trait UserService extends ShortenerService {
   val userRepoTopic = config.getString("user.repo.topic")
 
   val rejectUserRoute = path("token") {
-    (post | put | delete | head | options | patch) (complete(MethodNotAllowed))
+    (/*post | */put | delete | head | options | patch) (complete(MethodNotAllowed))
   }
 
   val userRoute = {
     path("token") {
       entity(as[GetUser]) { getUser: GetUser =>
-        get { ctx =>
+        post { ctx =>
           val replyTo = actorRefFactory.actorOf(Props(classOf[UserServiceCtxHandler], ctx))
           mediator ! Publish(`userRepoTopic`, shortenurl.actor.GetUser(getUser.user_id, getUser.secret, replyTo))
         }

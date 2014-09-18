@@ -32,13 +32,13 @@ class FolderRepoSpec extends Specification with NoTimeConversions with Mockito {
       repoTestProbe.expectMsg(ListFolders(token, replyTo))
     }
 
-    "return an empty list for a non-existent token" in new AkkaTestkitSpecs2Support with Mocks {
+    "return InvalidToken for a non-existent token" in new AkkaTestkitSpecs2Support with Mocks {
       val folderRepo = TestActorRef(new FolderRepoImpl)
 
       val replyToTestProbe = TestProbe()
       val replyTo = replyToTestProbe.ref
-      folderRepo ! UserForToken(None, replyTo)
-      replyToTestProbe.expectMsg(List.empty)
+      folderRepo ! UserForToken(None, replyTo, None)
+      replyToTestProbe.expectMsg(InvalidToken)
     }
 
     "return a non-empty list for an existent token" in new AkkaTestkitSpecs2Support with Mocks {
@@ -48,8 +48,8 @@ class FolderRepoSpec extends Specification with NoTimeConversions with Mockito {
 
       val replyToTestProbe = TestProbe()
       val replyTo = replyToTestProbe.ref
-      folderRepo ! UserForToken(Some(existentUser), replyTo)
-      replyToTestProbe.expectMsg(5 seconds, folders)
+      folderRepo ! UserForToken(Some(existentUser), replyTo, None)
+      replyToTestProbe.expectMsg(5 seconds, Folders(folders))
     }
   }
 
@@ -61,7 +61,6 @@ class FolderRepoSpec extends Specification with NoTimeConversions with Mockito {
     }
   }
 
-  val secret = ConfigFactory.load().getString("api.secret")
   val folderRepoTopic = ConfigFactory.load().getString("folder.repo.topic")
-  val existentUser: User = User(1, "cafebabe")
+  val existentUser: User = User(1L, "cafebabe")
 }

@@ -52,11 +52,11 @@ class UserRepoSpec extends Specification with NoTimeConversions with Mockito {
       val replyToTestProbe = TestProbe()
       val replyTo = replyToTestProbe.ref
 
-      mediator ! Publish(`userRepoTopic`, GetUserWithToken(nonExistentUser.token, replyTo, replyVia))
-      replyViaTestProbe.expectMsg(UserForToken(None, replyTo))
+      mediator ! Publish(`userRepoTopic`, GetUserWithToken(nonExistentUser.token, replyTo, replyVia, None))
+      replyViaTestProbe.expectMsg(UserForToken(None, replyTo, None))
 
-      mediator ! Publish(`userRepoTopic`, GetUserWithToken(nonExistentUser.token, replyTo, None))
-      replyToTestProbe.expectMsg(UserForToken(None, replyTo))
+      mediator ! Publish(`userRepoTopic`, GetUserWithToken(nonExistentUser.token, replyTo, None, None))
+      replyToTestProbe.expectMsg(UserForToken(None, replyTo, None))
     }
 
     "return the user with the given existent token" in new AkkaTestkitSpecs2Support with Mocks {
@@ -72,11 +72,11 @@ class UserRepoSpec extends Specification with NoTimeConversions with Mockito {
       val replyToTestProbe = TestProbe()
       val replyTo = replyToTestProbe.ref
 
-      mediator ! Publish(`userRepoTopic`, GetUserWithToken(existentUser.token, replyTo, replyVia))
-      replyViaTestProbe.expectMsg(UserForToken(Some(existentUser), replyTo))
+      mediator ! Publish(`userRepoTopic`, GetUserWithToken(existentUser.token, replyTo, replyVia, None))
+      replyViaTestProbe.expectMsg(UserForToken(Some(existentUser), replyTo, None))
 
-      mediator ! Publish(`userRepoTopic`, GetUserWithToken(existentUser.token, replyTo, None))
-      replyToTestProbe.expectMsg(UserForToken(Some(existentUser), replyTo))
+      mediator ! Publish(`userRepoTopic`, GetUserWithToken(existentUser.token, replyTo, None, None))
+      replyToTestProbe.expectMsg(UserForToken(Some(existentUser), replyTo, None))
     }
   }
 
@@ -90,6 +90,6 @@ class UserRepoSpec extends Specification with NoTimeConversions with Mockito {
 
   val secret = ConfigFactory.load().getString("api.secret")
   val userRepoTopic = ConfigFactory.load().getString("user.repo.topic")
-  val existentUser: User = User(1, "cafebabe")
-  val nonExistentUser: User = User(-1, "deadbeef")
+  val existentUser: User = User(1L, "cafebabe")
+  val nonExistentUser: User = User(-1L, "deadbeef")
 }

@@ -6,6 +6,9 @@ db {
     driverClass = "org.postgresql.Driver"
   }
 
+  codeSequence.ddl = "create sequence codeseq increment 1"
+  nextCode.query   = "select nextval('codeseq')"
+
   folders {
     user        = <user>
     password    = <pwd>

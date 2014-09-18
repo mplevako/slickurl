@@ -22,7 +22,7 @@ class UserRepositorySpec extends Specification with AroundExample with BeforeAft
     }
 
     "return None if there is no User with the given id" in {
-      userRepository.findById(-1) must beNone
+      userRepository.findById(-1L) must beNone
     }
   }
 
@@ -57,7 +57,7 @@ class UserRepositorySpec extends Specification with AroundExample with BeforeAft
   override val userRepository: UserRepository = new UserRepositoryImpl
   override val db: JdbcProfile#Backend#Database = profile.simple.Database.forURL("jdbc:h2:mem:users", driver = "org.h2.Driver")
 
-  val testUser: User = User(1, "cafebabe")
+  val testUser: User = User(1L, "cafebabe")
 
   import profile.simple._
 

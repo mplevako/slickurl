@@ -1,15 +1,9 @@
 package shortenurl.actor
 
-import akka.actor.{Actor, ActorRef, IndirectActorProducer}
+import akka.actor.{Actor, IndirectActorProducer}
 import akka.contrib.pattern.DistributedPubSubExtension
 import akka.contrib.pattern.DistributedPubSubMediator.{Subscribe, SubscribeAck}
-import shortenurl.domain.model.User
 import shortenurl.domain.repository.UserRepositoryComponent
-
-private[shortenurl] case class GetUser(userId: Long, secret: String, replyTo: ActorRef)
-
-private[shortenurl] case class GetUserWithToken(token: String, replyTo: ActorRef, replyVia: Option[ActorRef])
-private[shortenurl] case class UserForToken(uid: Option[User], replyTo: ActorRef)
 
 trait UserRepo extends Actor {
   val userRepoTopic = context.system.settings.config.getString("user.repo.topic")
@@ -25,8 +19,8 @@ trait UserRepo extends Actor {
 
   def ready: Actor.Receive = {
     case GetUser(userId, secret, replyTo) if secret == this.secret => replyTo ! userRepository.getUser(userId)
-    case GetUserWithToken(token, replyTo, replyVia) =>
-      replyVia.getOrElse(replyTo) ! UserForToken(userRepository.userForToken(token), replyTo)
+    case GetUserWithToken(token, replyTo, replyVia, payLoad) =>
+      replyVia.getOrElse(replyTo) ! UserForToken(userRepository.userForToken(token), replyTo, payLoad)
   }
 }
 

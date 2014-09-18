@@ -1,11 +1,9 @@
 package shortenurl.actor
 
-import akka.actor.{Actor, ActorRef, IndirectActorProducer}
+import akka.actor.{Actor, IndirectActorProducer}
 import akka.contrib.pattern.DistributedPubSubExtension
 import akka.contrib.pattern.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck}
 import shortenurl.domain.repository.FolderRepositoryComponent
-
-private[shortenurl] case class ListFolders(token: String, replyTo: ActorRef)
 
 trait FolderRepo extends Actor {
   val folderRepoTopic = context.system.settings.config.getString("folder.repo.topic")
@@ -20,10 +18,10 @@ trait FolderRepo extends Actor {
   }
 
   def ready: Actor.Receive = {
-    case ListFolders(token, replyTo) => mediator ! Publish(`userRepoTopic`, GetUserWithToken(token, replyTo, Some(self)))
-    case UserForToken(user, replyTo) => user match {
-      case None                => replyTo ! List.empty
-      case Some(userWithToken) => replyTo ! folderRepository.listFolders(userWithToken.id)
+    case ListFolders(token, replyTo)    => mediator ! Publish(`userRepoTopic`, GetUserWithToken(token, replyTo, Some(self), None))
+    case UserForToken(user, replyTo, _) => user match {
+        case None                => replyTo ! InvalidToken
+        case Some(userWithToken) => replyTo ! Folders(folderRepository.listFolders(userWithToken.id))
     }
   }
 }

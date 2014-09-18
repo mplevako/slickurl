@@ -13,7 +13,7 @@ class FolderRepositorySpec extends Specification with AroundExample with BeforeA
 
   sequential
 
-  "listFolders" should {
+  ".listFolders" should {
     "not return anything given an invalid uid" in {
       val folders = folderRepository.listFolders(-1)
       folders must beEmpty
@@ -30,16 +30,16 @@ class FolderRepositorySpec extends Specification with AroundExample with BeforeA
   override val folderRepository: FolderRepository = new FolderRepositoryImpl
   override val db: JdbcProfile#Backend#Database = profile.simple.Database.forURL("jdbc:h2:mem:folders", driver = "org.h2.Driver")
 
-  val testFolder: Folder = Folder(2, 2, "Two")
+  val testFolder: Folder = Folder(2L, 2L, "Two")
 
   import profile.simple._
 
   override def before: Any = db withSession { implicit session =>
     folders.ddl.create
     folders.forceInsertAll(
-      Folder(1, 1, "One"),
+      Folder(1L, 1L, "One"),
       testFolder,
-      Folder(11, 1, "OneOne")
+      Folder(11L, 1L, "OneOne")
     )
   }
 
@@ -52,5 +52,4 @@ class FolderRepositorySpec extends Specification with AroundExample with BeforeA
       try AsResult(t) finally session.rollback()
     }
   }
-
 }
