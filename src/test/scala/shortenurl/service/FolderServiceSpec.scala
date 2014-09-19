@@ -14,6 +14,10 @@ class FolderServiceSpec extends Specification with Specs2RouteTest with FolderSe
       Get("/folder", ListFolders("token")) ~> folderRoute ~> check { true }
     }
 
+    "support ListLinks GET requests to the folder/id path" in {
+      Get("/folder/1", ListLinks("token", None, None)) ~> sealRoute(folderRoute) ~> check( true )
+    }
+
     "return a MethodNotAllowed error for POST requests to the folder path" in {
       Post("/folder") ~> sealRoute(folderRoute) ~> check { status === MethodNotAllowed }
     }

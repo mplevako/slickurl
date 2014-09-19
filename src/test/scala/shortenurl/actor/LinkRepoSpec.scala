@@ -8,7 +8,7 @@ import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import org.specs2.time.NoTimeConversions
-import shortenurl.domain.model.{Error, ErrorCode, Link, User}
+import shortenurl.domain.model._
 import shortenurl.domain.repository.LinkRepositoryComponent
 
 import scala.concurrent.duration._
@@ -18,6 +18,17 @@ class LinkRepoSpec extends Specification with NoTimeConversions with Mockito {
   sequential
 
   "LinkRepo" should {
+    "return a non-empty list for an existent token" in new AkkaTestkitSpecs2Support with Mocks {
+      val folders = List(Folder(1, existentUser.id, "folder"))
+      repoMock.listFolders(existentUser.id) returns folders
+      val linkRepo = TestActorRef(new LinkRepoImpl)
+
+      val replyToTestProbe = TestProbe()
+      val replyTo = replyToTestProbe.ref
+      linkRepo ! UserForToken(Some(existentUser), replyTo, Some(ListFolders("token", replyTo)))
+      replyToTestProbe.expectMsg(5 seconds, Folders(folders))
+    }
+
     "ask the user repository for a user with the given token" in new AkkaTestkitSpecs2Support with Mocks {
       val repoTestProbe = TestProbe()
       val linkRepo = repoTestProbe.ref

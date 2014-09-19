@@ -1,9 +1,9 @@
 package shortenurl.actor
 
-import akka.actor.{Actor, IndirectActorProducer}
+import akka.actor.{Actor, ActorRef, IndirectActorProducer}
 import akka.contrib.pattern.DistributedPubSubExtension
 import akka.contrib.pattern.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck}
-import shortenurl.domain.model.{Error, ErrorCode, Link}
+import shortenurl.domain.model.{Error, ErrorCode, Link, User}
 import shortenurl.domain.repository.LinkRepositoryComponent
 
 trait LinkRepo extends Actor {
@@ -20,21 +20,33 @@ trait LinkRepo extends Actor {
   }
 
   def ready: Actor.Receive = {
+    case cmd@ListFolders(token, replyTo) =>
+      mediator ! Publish(`userRepoTopic`, GetUserWithToken(token, replyTo, Some(self), Some(cmd)))
+
     case cmd@ShortenLink(token, _, _, _, replyTo) =>
       mediator ! Publish(`userRepoTopic`, GetUserWithToken(token, replyTo, Some(self), Some(cmd)))
+
     case cmd@ListLinks(token, _, _, _, replyTo) =>
       mediator ! Publish(`userRepoTopic`, GetUserWithToken(token, replyTo, Some(self), Some(cmd)))
-    case UserForToken(user, replyTo, cmd) =>
-      user match {
-          case None => replyTo ! Error(ErrorCode.InvalidToken)
-          case Some(userWithToken) => cmd match {
-              case Some(ShortenLink(_,url,code,fid,_)) =>
-                val link = Link(userWithToken.id, url, code, fid)
-                replyTo ! linkRepository.shortenUrl(link)
-              case Some(ListLinks(_,fid,offset,limit,_)) =>
-                replyTo ! Links(linkRepository.listLinks(userWithToken.id, fid, offset, limit))
-              case _ => replyTo ! Error(ErrorCode.Unknown)
-          }
+
+    case UserForToken(user, replyTo, cmd) => processUserForToken(user, replyTo, cmd)
+  }
+
+  def processUserForToken(user: Option[User], replyTo: ActorRef, cmd: Option[Any]) = user match {
+    case None => replyTo ! Error(ErrorCode.InvalidToken)
+
+    case Some(userWithToken) => cmd match {
+      case Some(ShortenLink(_, url, code, fid, _)) =>
+        val link = Link(userWithToken.id, url, code, fid)
+        replyTo ! linkRepository.shortenUrl(link)
+
+      case Some(ListLinks(_, fid, offset, limit, _)) =>
+        replyTo ! Links(linkRepository.listLinks(userWithToken.id, fid, offset, limit))
+
+      case Some(ListFolders(_,_)) =>
+        replyTo ! Folders(linkRepository.listFolders(userWithToken.id))
+
+      case _ => replyTo ! Error(ErrorCode.Unknown)
     }
   }
 }

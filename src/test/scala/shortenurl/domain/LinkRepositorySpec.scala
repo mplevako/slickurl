@@ -37,15 +37,15 @@ class LinkRepositorySpec extends Specification with AroundExample with BeforeAft
   ".listLinks" should {
     "list all link for the given user if no folder id is specified" in {
       val linkWithCode = nonExistentLink.copy(code = Some("cafebabe"))
-      val links = linkRepository.listLinks(1, None, 0, None)
+      val links = linkRepository.listLinks(1, None, None, None)
       links must not(beEmpty)
       links.size must_== 3
 
-      val ofsLinks = linkRepository.listLinks(1, None, 1, None)
+      val ofsLinks = linkRepository.listLinks(1L, None, Some(1L), None)
       ofsLinks must not(beEmpty)
       ofsLinks.size must_== 2
 
-      val ofsLimLinks = linkRepository.listLinks(1, None, 1, Some(1))
+      val ofsLimLinks = linkRepository.listLinks(1L, None, Some(1L), Some(1))
       ofsLimLinks must not(beEmpty)
       ofsLimLinks.size must_== 1
       ofsLimLinks.head.code must beSome[String]
@@ -56,6 +56,19 @@ class LinkRepositorySpec extends Specification with AroundExample with BeforeAft
       val e = linkRepository.shortenUrl(nonExistentLink)
       e must beRight[Link]
       e.right.get must_== nonExistentLink.copy(code = Some(encodedIntMaxVal))
+    }
+
+    ".listFolders" should {
+      "not return anything given an invalid uid" in {
+        val folders = linkRepository.listFolders(-1L)
+        folders must beEmpty
+      }
+
+      "return only folders for the user with the given token" in {
+        val folders = linkRepository.listFolders(2)
+        folders.size must_== 1
+        folders must not(contain(existentFolder))
+      }
     }
   }
 

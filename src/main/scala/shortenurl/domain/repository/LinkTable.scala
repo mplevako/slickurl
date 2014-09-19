@@ -10,24 +10,24 @@ trait LinkTable extends FolderTable {
 
   class Links(tag: Tag) extends Table[Link](tag, "LINK") {
 
-    def id    = column[Long] ("ID", O.PrimaryKey, O.AutoInc, O.DBType("BIGSERIAL"))
     def uid   = column[Long] ("UID", O.NotNull)
     def fid   = column[Option[Long]] ("FID", O.Nullable)
     def url   = column[String] ("URL", O.NotNull)
     def code  = column[String] ("CODE", O.NotNull)
 
-    def folder = foreignKey("FOLDER_FK", fid, folders)(_.id, onUpdate=ForeignKeyAction.Restrict)
+    def id    = primaryKey("LINK_CODE_PK", code)
+
+    def folder = foreignKey("FOLDER_FK", fid, folders)(_.id, onUpdate=ForeignKeyAction.Cascade)
 
     def * = (uid, url, code.?, fid) <> (Link.tupled, Link.unapply)
   }
 
   val links = Links.links
-  val codeSequence = CodeSeq
-//    val codeSequence = Links.codeSequence
+  val codeSequence  = CodeSeq //actually must be val codeSequence = Links.codeSequence
 
   private object Links {
     val links = TableQuery[Links]
-//    val codeSequence = Sequence[Long]("codeseq") start 128 inc 1
+    //val codeSequence = Sequence[Long]("codeseq") start 128 inc 1
   }
 
   private[repository] object CodeSeq {

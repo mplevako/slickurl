@@ -2,7 +2,6 @@ package shortenurl.service
 
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import spray.http.StatusCodes._
@@ -43,5 +42,4 @@ class UserServiceSpec extends Specification with Specs2RouteTest with UserServic
   override def actorRefFactory = system
   val testProbe = TestProbe()
   override val mediator: ActorRef = testProbe.ref
-  val secret = ConfigFactory.load().getString("api.secret")
 }

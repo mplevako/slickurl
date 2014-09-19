@@ -11,8 +11,6 @@ class Shortener(override val mediator: ActorRef) extends HttpServiceActor with S
 
   override def receive: Receive = runRoute(
     pathPrefix("api") {
-      userRoute   ~
-      folderRoute ~
-      linkRoute
+      userRoute ~ folderRoute ~ linkRoute
     })
 }

@@ -3,6 +3,7 @@ package shortenurl.actor
 import akka.actor.{Actor, IndirectActorProducer}
 import akka.contrib.pattern.DistributedPubSubExtension
 import akka.contrib.pattern.DistributedPubSubMediator.{Subscribe, SubscribeAck}
+import shortenurl.domain.model.{Error, ErrorCode}
 import shortenurl.domain.repository.UserRepositoryComponent
 
 trait UserRepo extends Actor {
@@ -18,7 +19,12 @@ trait UserRepo extends Actor {
   }
 
   def ready: Actor.Receive = {
-    case GetUser(userId, secret, replyTo) if secret == this.secret => replyTo ! userRepository.getUser(userId)
+    case GetUser(userId, secret, replyTo) if secret == this.secret =>
+      replyTo ! userRepository.getUser(userId)
+
+    case GetUser(userId, secret, replyTo) if secret != this.secret =>
+      replyTo ! Error(ErrorCode.InvalidToken)
+
     case GetUserWithToken(token, replyTo, replyVia, payLoad) =>
       replyVia.getOrElse(replyTo) ! UserForToken(userRepository.userForToken(token), replyTo, payLoad)
   }

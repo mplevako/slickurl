@@ -14,10 +14,6 @@ class LinkServiceSpec extends Specification with Specs2RouteTest with LinkServic
       Post("/link", ShortenLink("token", "url", None, None)) ~> linkRoute ~> check( true )
     }
 
-    "support ListLinks GET requests to the folder path" in {
-      Get("/folder/1", ListLinks("token", 0, None)) ~> sealRoute(linkRoute) ~> check( true )
-    }
-
     "return a MethodNotAllowed error for PUT requests to the link path" in {
       Put("/link") ~> sealRoute(linkRoute) ~> check { status === MethodNotAllowed }
     }
@@ -36,26 +32,6 @@ class LinkServiceSpec extends Specification with Specs2RouteTest with LinkServic
 
     "return a MethodNotAllowed error for PATCH requests to the link path" in {
       Patch("/link") ~> sealRoute(linkRoute) ~> check { status === MethodNotAllowed }
-    }
-
-    "return a MethodNotAllowed error for PUT requests to the folder path" in {
-      Put("/folder/1") ~> sealRoute(linkRoute) ~> check { status === MethodNotAllowed }
-    }
-
-    "return a MethodNotAllowed error for DELETE requests to the folder path" in {
-      Delete("/folder/1") ~> sealRoute(linkRoute) ~> check { status === MethodNotAllowed }
-    }
-
-    "return a MethodNotAllowed error for OPTIONS requests to the folder path" in {
-      Options("/folder/1") ~> sealRoute(linkRoute) ~> check { status === MethodNotAllowed }
-    }
-
-    "return a MethodNotAllowed error for HEAD requests to the folder path" in {
-      Head("/folder/1") ~> sealRoute(linkRoute) ~> check { status === MethodNotAllowed }
-    }
-
-    "return a MethodNotAllowed error for PATCH requests to the folder path" in {
-      Patch("/folder/1") ~> sealRoute(linkRoute) ~> check { status === MethodNotAllowed }
     }
   }
 
