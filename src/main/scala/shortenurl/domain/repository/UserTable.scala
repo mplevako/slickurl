@@ -14,6 +14,9 @@ trait UserTable extends Profile {
     primaryKey("USER_PK", id)
 
     def * = (id, token) <> (User.tupled, User.unapply)
+
+    def id_token_idx = index("USER_ID_TOKEN_IDX", (id, token), unique = true)
+    def token_id_idx = index("USER_TOKEN_ID_IDX", (token, id), unique = true)
   }
 
   val users = Users.users

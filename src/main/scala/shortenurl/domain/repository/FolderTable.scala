@@ -13,6 +13,7 @@ trait FolderTable extends Profile {
     def title = column[String]("TITLE", O.NotNull)
 
     def pk = primaryKey("FOLDER_PK", id)
+    def uid_id_idx = index("FOLDER_UID_ID_IDX", (id, uid), unique = true)
 
     def * = (id, uid, title) <> (Folder.tupled, Folder.unapply)
   }
