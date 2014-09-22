@@ -25,8 +25,8 @@ trait UserRepo extends Actor {
     case GetUser(userId, secret, replyTo) if secret != this.secret =>
       replyTo ! Error(ErrorCode.InvalidToken)
 
-    case GetUserWithToken(token, replyTo, replyVia, payLoad) =>
-      replyVia.getOrElse(replyTo) ! UserForToken(userRepository.userForToken(token), replyTo, payLoad)
+    case GetUserWithToken(token, replyTo, payLoad) =>
+      replyTo ! UserForToken(userRepository.userForToken(token), payLoad)
   }
 }
 

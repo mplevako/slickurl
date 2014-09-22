@@ -4,8 +4,8 @@ import akka.actor.ActorRef
 import shortenurl.domain.model.{Folder, Link, User}
 
 private[shortenurl] case class GetUser(userId: Long, secret: String, replyTo: ActorRef)
-private[shortenurl] case class GetUserWithToken(token: String, replyTo: ActorRef, replyVia: Option[ActorRef], payLoad: Option[Any])
-private[shortenurl] case class UserForToken(uid: Option[User], replyTo: ActorRef, payLoad: Option[Any])
+private[shortenurl] case class GetUserWithToken(token: String, replyTo: ActorRef, payLoad: Option[Any])
+private[shortenurl] case class UserForToken(uid: Option[User], payLoad: Option[Any])
 
 private[shortenurl] case class ListLinks(token: String, folderId: Option[Long], offset: Option[Long], limit: Option[Long], replyTo: ActorRef)
 private[shortenurl] case class ListFolders(token: String, replyTo: ActorRef)

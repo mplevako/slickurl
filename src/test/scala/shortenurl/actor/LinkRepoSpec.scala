@@ -25,7 +25,7 @@ class LinkRepoSpec extends Specification with NoTimeConversions with Mockito {
 
       val replyToTestProbe = TestProbe()
       val replyTo = replyToTestProbe.ref
-      linkRepo ! UserForToken(Some(existentUser), replyTo, Some(ListFolders("token", replyTo)))
+      linkRepo ! UserForToken(Some(existentUser), Some(ListFolders("token", replyTo)))
       replyToTestProbe.expectMsg(5 seconds, Folders(folders))
     }
 
@@ -49,7 +49,7 @@ class LinkRepoSpec extends Specification with NoTimeConversions with Mockito {
 
       val replyToTestProbe = TestProbe()
       val replyTo = replyToTestProbe.ref
-      linkRepo ! UserForToken(None, replyTo, None)
+      linkRepo ! UserForToken(None, Some(ListFolders("token", replyTo)))
       replyToTestProbe.expectMsg(Error(ErrorCode.InvalidToken))
     }
 
@@ -61,7 +61,7 @@ class LinkRepoSpec extends Specification with NoTimeConversions with Mockito {
       val replyToTestProbe = TestProbe()
       val replyTo = replyToTestProbe.ref
       val shortenLink = ShortenLink("token", "url", None, None, replyTo)
-      linkRepo ! UserForToken(Some(existentUser), replyTo, Some(shortenLink))
+      linkRepo ! UserForToken(Some(existentUser), Some(shortenLink))
       replyToTestProbe.expectMsg(5 seconds, Right(link))
       there was one(repoMock).shortenUrl(link)
     }

@@ -1,6 +1,6 @@
 package shortenurl.actor
 
-import akka.actor.{Actor, ActorRef, IndirectActorProducer}
+import akka.actor.{Actor, IndirectActorProducer}
 import akka.contrib.pattern.DistributedPubSubExtension
 import akka.contrib.pattern.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck}
 import shortenurl.domain.model.{Error, ErrorCode, Link, User}
@@ -21,33 +21,45 @@ trait LinkRepo extends Actor {
 
   def ready: Actor.Receive = {
     case cmd@ListFolders(token, replyTo) =>
-      mediator ! Publish(`userRepoTopic`, GetUserWithToken(token, replyTo, Some(self), Some(cmd)))
+      mediator ! Publish(`userRepoTopic`, GetUserWithToken(token, self, Some(cmd)))
 
     case cmd@ShortenLink(token, _, _, _, replyTo) =>
-      mediator ! Publish(`userRepoTopic`, GetUserWithToken(token, replyTo, Some(self), Some(cmd)))
+      mediator ! Publish(`userRepoTopic`, GetUserWithToken(token, self, Some(cmd)))
 
     case cmd@ListLinks(token, _, _, _, replyTo) =>
-      mediator ! Publish(`userRepoTopic`, GetUserWithToken(token, replyTo, Some(self), Some(cmd)))
+      mediator ! Publish(`userRepoTopic`, GetUserWithToken(token, self, Some(cmd)))
 
-    case UserForToken(user, replyTo, cmd) => processUserForToken(user, replyTo, cmd)
+    case UserForToken(user, cmd) => processUserForToken(user, cmd)
   }
 
-  def processUserForToken(user: Option[User], replyTo: ActorRef, cmd: Option[Any]) = user match {
-    case None => replyTo ! Error(ErrorCode.InvalidToken)
+  def processUserForToken(user: Option[User], cmd: Option[Any]) = cmd match {
+      case Some(ShortenLink(_, url, code, fid, replyTo)) =>
+        replyTo ! replyMsg(user, shortUrlReply(url, code, fid))
 
-    case Some(userWithToken) => cmd match {
-      case Some(ShortenLink(_, url, code, fid, _)) =>
-        val link = Link(userWithToken.id, url, code, fid)
-        replyTo ! linkRepository.shortenUrl(link)
+      case Some(ListLinks(_, fid, offset, limit, replyTo)) =>
+        replyTo ! replyMsg(user, linksReply(fid, offset, limit))
 
-      case Some(ListLinks(_, fid, offset, limit, _)) =>
-        replyTo ! Links(linkRepository.listLinks(userWithToken.id, fid, offset, limit))
+      case Some(ListFolders(_,replyTo)) =>
+        replyTo ! replyMsg(user, foldersreply)
+  }
 
-      case Some(ListFolders(_,_)) =>
-        replyTo ! Folders(linkRepository.listFolders(userWithToken.id))
+  def replyMsg(user: Option[User], userWithTokenHandler: User => Any) = user match {
+    case None => Error(ErrorCode.InvalidToken)
+    case Some(userWithToken) => userWithTokenHandler(userWithToken)
+    case _ => Error(ErrorCode.Unknown)
+  }
 
-      case _ => replyTo ! Error(ErrorCode.Unknown)
-    }
+  def shortUrlReply(url: String, code: Option[String], folderId: Option[Long])(user: User) = {
+    val link = Link(user.id, url, code, folderId)
+    linkRepository.shortenUrl(link)
+  }
+
+  def linksReply(folderId: Option[Long], offset: Option[Long], limit: Option[Long])(user: User) = {
+    Links(linkRepository.listLinks(user.id, folderId, offset, limit))
+  }
+  
+  def foldersreply(user: User) = {
+    Folders(linkRepository.listFolders(user.id))
   }
 }
 

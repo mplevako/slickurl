@@ -47,16 +47,11 @@ class UserRepoSpec extends Specification with NoTimeConversions with Mockito {
       mediator ! Subscribe(`userRepoTopic`, userRepo)
       expectMsgType[SubscribeAck]
 
-      val replyViaTestProbe = TestProbe()
-      val replyVia = Some(replyViaTestProbe.ref)
       val replyToTestProbe = TestProbe()
       val replyTo = replyToTestProbe.ref
 
-      mediator ! Publish(`userRepoTopic`, GetUserWithToken(nonExistentUser.token, replyTo, replyVia, None))
-      replyViaTestProbe.expectMsg(UserForToken(None, replyTo, None))
-
-      mediator ! Publish(`userRepoTopic`, GetUserWithToken(nonExistentUser.token, replyTo, None, None))
-      replyToTestProbe.expectMsg(UserForToken(None, replyTo, None))
+      mediator ! Publish(`userRepoTopic`, GetUserWithToken(nonExistentUser.token, replyTo, None))
+      replyToTestProbe.expectMsg(UserForToken(None, None))
     }
 
     "return the user with the given existent token" in new AkkaTestkitSpecs2Support with Mocks {
@@ -67,16 +62,11 @@ class UserRepoSpec extends Specification with NoTimeConversions with Mockito {
       mediator ! Subscribe(`userRepoTopic`, userRepo)
       expectMsgType[SubscribeAck]
 
-      val replyViaTestProbe = TestProbe()
-      val replyVia = Some(replyViaTestProbe.ref)
       val replyToTestProbe = TestProbe()
       val replyTo = replyToTestProbe.ref
 
-      mediator ! Publish(`userRepoTopic`, GetUserWithToken(existentUser.token, replyTo, replyVia, None))
-      replyViaTestProbe.expectMsg(UserForToken(Some(existentUser), replyTo, None))
-
-      mediator ! Publish(`userRepoTopic`, GetUserWithToken(existentUser.token, replyTo, None, None))
-      replyToTestProbe.expectMsg(UserForToken(Some(existentUser), replyTo, None))
+      mediator ! Publish(`userRepoTopic`, GetUserWithToken(existentUser.token, replyTo, None))
+      replyToTestProbe.expectMsg(UserForToken(Some(existentUser), None))
     }
   }
 
