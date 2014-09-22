@@ -25,6 +25,8 @@ trait LinkTable extends FolderTable {
 
     def id_url_code_idx = index("LINK_URL_CODE_IDX", (code, url))
 
+    def folder_fk_idx = index("LINK_FID_IDX", fid)
+
     def * = (uid, url, code.?, fid) <> (Link.tupled, Link.unapply)
   }
 
