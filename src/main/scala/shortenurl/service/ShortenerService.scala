@@ -1,3 +1,6 @@
+/**
+ * Copyright 2014 Maxim Plevako
+ **/
 package shortenurl.service
 
 import akka.actor.ActorRef
@@ -13,7 +16,7 @@ trait ShortenerService extends HttpService with Json4sSupport {
   val mediator: ActorRef
 
   val config = ConfigFactory.load()
-  val secret     = config.getString("user.repo.topic")
+  val secret     = config.getString("api.secret")
   val userRepoTopic = config.getString("user.repo.topic")
   val linkRepoTopic = config.getString("link.repo.topic")
 

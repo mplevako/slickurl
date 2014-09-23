@@ -1,3 +1,6 @@
+/**
+ * Copyright 2014 Maxim Plevako
+ **/
 package shortenurl.urlcodec
 
 import org.specs2.mutable.Specification

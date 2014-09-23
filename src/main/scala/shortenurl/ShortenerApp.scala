@@ -1,6 +1,9 @@
+/**
+ * Copyright 2014 Maxim Plevako
+ **/
 package shortenurl
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor._
 import akka.contrib.pattern.DistributedPubSubExtension
 import akka.io.IO
 import akka.routing.RoundRobinRouter
@@ -45,7 +48,8 @@ class UserRepositoryApp(implicit val system: ActorSystem) extends UserRepository
 }
 
 class LinkRepositoryApp(implicit val system: ActorSystem) extends LinkRepositoryComponent
-                                                                  with LinkTable with FolderTable{
+                                                                  with LinkTable with FolderTable
+                                                                  with ClickTable{
 
   override val profile: JdbcProfile = scala.slick.driver.PostgresDriver
   override val db: JdbcProfile#Backend#Database = profile.simple.Database.forConfig("db.links")
@@ -55,7 +59,7 @@ class LinkRepositoryApp(implicit val system: ActorSystem) extends LinkRepository
   db withSession { implicit session =>
     if (MTable.getTables("LINK").list.isEmpty) {
 //      (links.ddl ++ folders.ddl ++ codeSequence.ddl).create
-      (folders.ddl ++ links.ddl).create
+      (folders.ddl ++ links.ddl ++ clicks.ddl).create
       codeSequence.ddl.execute
     }
   }

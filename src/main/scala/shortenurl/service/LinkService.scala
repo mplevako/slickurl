@@ -1,10 +1,11 @@
+/**
+ * Copyright 2014 Maxim Plevako
+ **/
 package shortenurl.service
 
 import akka.actor.Props
 import akka.contrib.pattern.DistributedPubSubMediator.Publish
-import org.json4s.{DefaultFormats, Formats}
-import shortenurl.actor.Links
-import spray.httpx.Json4sSupport
+import spray.http.StatusCodes
 import spray.routing.RequestContext
 import spray.routing.directives.DetachMagnet
 
@@ -12,9 +13,15 @@ import scala.concurrent.duration._
 
 private[shortenurl] case class ShortenLink(token: String, url: String, code: Option[String], folder_id: Option[Long])
 private[shortenurl] case class ListLinks(token: String, offset: Option[Long], limit: Option[Long])
+private[shortenurl] case class ListClicks(token: String, offset: Option[Long], limit: Option[Long])
+private[shortenurl] case class PassThrough(referer: String, remote_ip: String)
+private[shortenurl] case class GetLinkSummary(token: String)
+private[shortenurl] case class LinkSummary(link: Link, folder_id: Option[Long], clicks: Long)
 private[shortenurl] case class Link(url: String, code: String)
 
 trait LinkService extends ShortenerService {
+
+  val linkCode = s"""[${config.getString("app.shorturl.alphabet")}]+""".r
 
   val linkRoute = {
     path("link") {
@@ -29,6 +36,8 @@ trait LinkService extends ShortenerService {
       } ~
       get {
         entity(as[ListLinks]) { listLinks: ListLinks =>
+            if(listLinks.offset.getOrElse(0L) < 0L || listLinks.limit.getOrElse(0L) < 0L) complete(StatusCodes.BadRequest)
+            else
             detach(DetachMagnet.fromUnit()) { ctx =>
                 val replyTo = actorRefFactory.actorOf(Props(classOf[LinkServiceCtxHandler], ctx))
                 mediator ! Publish(`linkRepoTopic`, shortenurl.actor.ListLinks(listLinks.token,
@@ -36,23 +45,63 @@ trait LinkService extends ShortenerService {
             }
         }
       }
+    } ~
+    path( "link" / linkCode / "clicks") { code =>
+      get {
+        entity(as[ListClicks]) { listClicks: ListClicks =>
+            if(listClicks.offset.getOrElse(0L) < 0L || listClicks.limit.getOrElse(0L) < 0L) complete(StatusCodes.BadRequest)
+            else
+            detach(DetachMagnet.fromUnit()) { ctx =>
+               val replyTo = actorRefFactory.actorOf(Props(classOf[LinkServiceCtxHandler], ctx))
+               mediator ! Publish(`linkRepoTopic`, shortenurl.actor.ListClicks(code, listClicks.token,
+                                                        listClicks.offset, listClicks.limit, replyTo))
+            }
+        }
+      }
+    } ~
+    path( "link" / linkCode) { code =>
+      post {
+        entity(as[PassThrough]) { passThrough: PassThrough =>
+           detach(DetachMagnet.fromUnit()) { ctx =>
+               val replyTo = actorRefFactory.actorOf(Props(classOf[LinkServiceCtxHandler], ctx))
+               mediator ! Publish(`linkRepoTopic`, shortenurl.actor.PassThrough(code,
+                                              passThrough.referer, passThrough.remote_ip, replyTo))
+           }
+        }
+      } ~
+      get {
+        entity(as[GetLinkSummary]) { summary: GetLinkSummary =>
+           detach(DetachMagnet.fromUnit()) { ctx =>
+               val replyTo = actorRefFactory.actorOf(Props(classOf[LinkServiceCtxHandler], ctx))
+               mediator ! Publish(`linkRepoTopic`, shortenurl.actor.GetLinkSummary(code, summary.token,
+                                                                                replyTo))
+           }
+        }
+      }
     }
   }
 }
 
-class LinkServiceCtxHandler(override val ctx: RequestContext) extends ServiceCtxHandler(ctx)
-                                                                      with Json4sSupport {
-  override implicit val json4sFormats: Formats = DefaultFormats
-
+class LinkServiceCtxHandler(override val ctx: RequestContext) extends ServiceCtxHandler(ctx) {
   override def receive = super.receive orElse {
-    case Links(links) =>
-      context.setReceiveTimeout(Duration.Undefined)
-      ctx.complete(links)
-      context.stop(self)
-
     case Right(shortenurl.domain.model.Link(_, url, code, _)) =>
       context.setReceiveTimeout(Duration.Undefined)
       ctx.complete(Link(url, code.get))
+      context.stop(self)
+
+    case Right(list: List[_]) =>
+      context.setReceiveTimeout(Duration.Undefined)
+      ctx.complete(list)
+      context.stop(self)
+
+    case Right(summary: shortenurl.domain.model.LinkSummary) =>
+      context.setReceiveTimeout(Duration.Undefined)
+      ctx.complete(LinkSummary(Link(summary.code, summary.url), summary.folderId, summary.clickCount))
+      context.stop(self)
+
+    case Right(url: String) =>
+      context.setReceiveTimeout(Duration.Undefined)
+      ctx.complete(url)
       context.stop(self)
   }
 }

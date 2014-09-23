@@ -1,4 +1,9 @@
+/**
+ * Copyright 2014 Maxim Plevako
+ **/
 package shortenurl.actor
+
+import java.util.Date
 
 import akka.contrib.pattern.DistributedPubSubExtension
 import akka.contrib.pattern.DistributedPubSubMediator.{Publish, Subscribe}
@@ -18,17 +23,6 @@ class LinkRepoSpec extends Specification with NoTimeConversions with Mockito {
   sequential
 
   "LinkRepo" should {
-    "return a non-empty list for an existent token" in new AkkaTestkitSpecs2Support with Mocks {
-      val folders = List(Folder(1, existentUser.id, "folder"))
-      repoMock.listFolders(existentUser.id) returns folders
-      val linkRepo = TestActorRef(new LinkRepoImpl)
-
-      val replyToTestProbe = TestProbe()
-      val replyTo = replyToTestProbe.ref
-      linkRepo ! UserForToken(Some(existentUser), Some(ListFolders("token", replyTo)))
-      replyToTestProbe.expectMsg(5 seconds, Folders(folders))
-    }
-
     "ask the user repository for a user with the given token" in new AkkaTestkitSpecs2Support with Mocks {
       val repoTestProbe = TestProbe()
       val linkRepo = repoTestProbe.ref
@@ -53,6 +47,39 @@ class LinkRepoSpec extends Specification with NoTimeConversions with Mockito {
       replyToTestProbe.expectMsg(Error(ErrorCode.InvalidToken))
     }
 
+    "return a non-empty folders list" in new AkkaTestkitSpecs2Support with Mocks {
+      val folders = List(Folder(1, existentUser.id, "folder"))
+      repoMock.listFolders(existentUser.id) returns folders
+      val linkRepo = TestActorRef(new LinkRepoImpl)
+
+      val replyToTestProbe = TestProbe()
+      val replyTo = replyToTestProbe.ref
+      linkRepo ! UserForToken(Some(existentUser), Some(ListFolders("token", replyTo)))
+      replyToTestProbe.expectMsg(10 seconds, Folders(folders))
+    }
+
+    "return a non-empty links list" in new AkkaTestkitSpecs2Support with Mocks {
+      val links = List(existentLink)
+      repoMock.listLinks(existentUser.id, Some(1L), None, None) returns Right(links)
+      val linkRepo = TestActorRef(new LinkRepoImpl)
+
+      val replyToTestProbe = TestProbe()
+      val replyTo = replyToTestProbe.ref
+      linkRepo ! UserForToken(Some(existentUser), Some(ListLinks("token", Some(1L), None, None, replyTo)))
+      replyToTestProbe.expectMsg(10 seconds, Right(List(UrlCode(existentLink.url, existentLink.code))))
+    }
+
+    "return a non-empty clicks list" in new AkkaTestkitSpecs2Support with Mocks {
+      val clicks = List(existentClick)
+      repoMock.listClicks(existentClick.code, existentUser.id, None, None) returns Right(clicks)
+      val linkRepo = TestActorRef(new LinkRepoImpl)
+
+      val replyToTestProbe = TestProbe()
+      val replyTo = replyToTestProbe.ref
+      linkRepo ! UserForToken(Some(existentUser), Some(ListClicks(existentClick.code, "token", None, None, replyTo)))
+      replyToTestProbe.expectMsg(10 seconds, Right(List(Clck(existentClick.date, existentClick.referer, existentClick.remote_ip))))
+    }
+
     "return a shorten link if token is valid" in new AkkaTestkitSpecs2Support with Mocks {
       val link = Link(existentUser.id, "url", None, None)
       repoMock.shortenUrl(link) returns Right(link)
@@ -62,8 +89,20 @@ class LinkRepoSpec extends Specification with NoTimeConversions with Mockito {
       val replyTo = replyToTestProbe.ref
       val shortenLink = ShortenLink("token", "url", None, None, replyTo)
       linkRepo ! UserForToken(Some(existentUser), Some(shortenLink))
-      replyToTestProbe.expectMsg(5 seconds, Right(link))
+      replyToTestProbe.expectMsg(10 seconds, Right(link))
       there was one(repoMock).shortenUrl(link)
+    }
+
+    "return link summary" in new AkkaTestkitSpecs2Support with Mocks {
+      val linkSummary = LinkSummary(existentLink.url, existentLink.code.get, existentLink.folderId, 1L)
+      repoMock.linkSummary(existentLink.code.get, existentLink.uid) returns Right(linkSummary)
+      val linkRepo = TestActorRef(new LinkRepoImpl)
+
+      val replyToTestProbe = TestProbe()
+      val replyTo = replyToTestProbe.ref
+      linkRepo ! UserForToken(Some(existentUser), Some(GetLinkSummary(existentLink.code.get, "token", replyTo)))
+      replyToTestProbe.expectMsg(10 seconds, Right(linkSummary))
+      there was one(repoMock).linkSummary(existentLink.code.get, existentLink.uid)
     }
   }
 
@@ -77,4 +116,6 @@ class LinkRepoSpec extends Specification with NoTimeConversions with Mockito {
 
   val linkRepoTopic = ConfigFactory.load().getString("link.repo.topic")
   val existentUser: User = User(1L, "cafebabe")
+  val existentLink: Link = Link(1L, "https://www.google.com", Some("yeah"), Some(1L))
+  val existentClick: Click = Click(existentLink.code.get, new Date(), "referer", "127.0.0.1")
 }

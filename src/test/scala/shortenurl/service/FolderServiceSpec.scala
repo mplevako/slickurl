@@ -1,3 +1,6 @@
+/**
+ * Copyright 2014 Maxim Plevako
+ **/
 package shortenurl.service
 
 import akka.actor.ActorRef

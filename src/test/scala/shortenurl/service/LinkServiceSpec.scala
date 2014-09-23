@@ -1,3 +1,6 @@
+/**
+ * Copyright 2014 Maxim Plevako
+ **/
 package shortenurl.service;
 
 import akka.actor.ActorRef
@@ -12,6 +15,22 @@ class LinkServiceSpec extends Specification with Specs2RouteTest with LinkServic
   "Link service" should {
     "support ShortenLink POST requests to the link path" in {
       Post("/link", ShortenLink("token", "url", None, None)) ~> linkRoute ~> check( true )
+    }
+
+    "support ListLinks GET requests to the link path" in {
+      Get("/link", ListLinks("token", None, None)) ~> linkRoute ~> check( true )
+    }
+
+    "support PassThrough POST requests to the link/$code path" in {
+      Post("/link/code", PassThrough("token", "127.0.0.1")) ~> linkRoute ~> check( true )
+    }
+
+    "support GetLinkSummary GET requests to the link/$code path" in {
+      Get("/link/code", GetLinkSummary("token")) ~> linkRoute ~> check( true )
+    }
+
+    "support ListClicks GET requests to the link/$code/clicks path" in {
+      Get("/link/code/clicks", ListClicks("token", None, None)) ~> linkRoute ~> check( true )
     }
 
     "return a MethodNotAllowed error for PUT requests to the link path" in {

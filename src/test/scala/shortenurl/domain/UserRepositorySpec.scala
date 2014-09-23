@@ -1,3 +1,6 @@
+/**
+ * Copyright 2014 Maxim Plevako
+ **/
 package shortenurl.domain
 
 import org.specs2.execute.{AsResult, Result}

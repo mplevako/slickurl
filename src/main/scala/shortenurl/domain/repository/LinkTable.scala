@@ -1,3 +1,6 @@
+/**
+ * Copyright 2014 Maxim Plevako
+ **/
 package shortenurl.domain.repository
 
 import com.typesafe.config.ConfigFactory
@@ -5,7 +8,7 @@ import shortenurl.domain.model.Link
 
 import scala.slick.jdbc.StaticQuery
 
-trait LinkTable extends FolderTable {
+trait LinkTable extends Profile { this: FolderTable =>
   val config = ConfigFactory.load()
 
   import profile.simple._
@@ -15,16 +18,13 @@ trait LinkTable extends FolderTable {
     def uid   = column[Long] ("UID", O.NotNull)
     def fid   = column[Option[Long]] ("FID", O.Nullable)
     def url   = column[String] ("URL", O.NotNull)
-    def code  = column[String] ("CODE", O.NotNull, O.DBType(s"VARCHAR(${config.getString("app.shorturl.maxlength")})"))
+    def code  = column[String] ("CODE", O.NotNull)
 
-    def id    = primaryKey("LINK_CODE_PK", code)
-
-    def folder = foreignKey("FOLDER_FK", fid, folders)(_.id, onUpdate=ForeignKeyAction.Cascade)
+    def id     = primaryKey("LINK_CODE_PK", code)
+    def folder = foreignKey("FOLDER_FK", fid, folders)(_.id, onUpdate = ForeignKeyAction.Restrict, onDelete = ForeignKeyAction.Restrict)
 
     def code_uid_idx = index("LINK_CODE_UID_IDX", (code, uid), unique = true)
-
     def id_url_code_idx = index("LINK_URL_CODE_IDX", (code, url))
-
     def folder_fk_idx = index("LINK_FID_IDX", fid)
 
     def * = (uid, url, code.?, fid) <> (Link.tupled, Link.unapply)

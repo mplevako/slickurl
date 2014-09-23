@@ -1,3 +1,6 @@
+/**
+ * Copyright 2014 Maxim Plevako
+ **/
 package shortenurl.actor
 
 import akka.contrib.pattern.DistributedPubSubExtension

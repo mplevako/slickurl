@@ -1,3 +1,6 @@
+/**
+ * Copyright 2014 Maxim Plevako
+ **/
 package shortenurl.domain.repository
 
 import shortenurl.domain.model.Folder

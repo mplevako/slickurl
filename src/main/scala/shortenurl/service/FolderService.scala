@@ -1,10 +1,12 @@
+/**
+ * Copyright 2014 Maxim Plevako
+ **/
 package shortenurl.service
 
 import akka.actor.Props
 import akka.contrib.pattern.DistributedPubSubMediator.Publish
-import org.json4s.{DefaultFormats, Formats}
-import shortenurl.actor.{Folders, Links}
-import spray.httpx.Json4sSupport
+import shortenurl.actor.Folders
+import spray.http.StatusCodes
 import spray.routing.RequestContext
 import spray.routing.directives.DetachMagnet
 
@@ -29,6 +31,9 @@ trait FolderService extends ShortenerService {
     path( "folder" / LongNumber) { folderId =>
       get {
         entity(as[ListLinks]) { listLinks: ListLinks =>
+          if(listLinks.offset.getOrElse(0L) < 0L || listLinks.limit.getOrElse(0L) < 0L)
+            complete(StatusCodes.BadRequest)
+          else
           detach(DetachMagnet.fromUnit()) { ctx =>
             val replyTo = actorRefFactory.actorOf(Props(classOf[FolderServiceCtxHandler], ctx))
             mediator ! Publish(`linkRepoTopic`, shortenurl.actor.ListLinks(listLinks.token,
@@ -40,19 +45,16 @@ trait FolderService extends ShortenerService {
   }
 }
 
-class FolderServiceCtxHandler(override val ctx: RequestContext) extends ServiceCtxHandler(ctx)
-                                                                        with Json4sSupport {
-  override implicit val json4sFormats: Formats = DefaultFormats
-
+class FolderServiceCtxHandler(override val ctx: RequestContext) extends ServiceCtxHandler(ctx) {
   override def receive = super.receive orElse {
     case Folders(folders) =>
       context.setReceiveTimeout(Duration.Undefined)
       ctx.complete(folders.map(folder => Folder(folder.id, folder.title)))
       context.stop(self)
 
-    case Links(links) =>
+    case Right(list: List[_]) =>
       context.setReceiveTimeout(Duration.Undefined)
-      ctx.complete(links)
+      ctx.complete(list)
       context.stop(self)
   }
 }

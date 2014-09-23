@@ -1,3 +1,6 @@
+/**
+ * Copyright 2014 Maxim Plevako
+ **/
 package shortenurl.actor
 
 import akka.actor.{Actor, IndirectActorProducer}
@@ -23,7 +26,7 @@ trait UserRepo extends Actor {
       replyTo ! userRepository.getUser(userId)
 
     case GetUser(userId, secret, replyTo) if secret != this.secret =>
-      replyTo ! Error(ErrorCode.InvalidToken)
+      replyTo ! Error(ErrorCode.WrongSecret)
 
     case GetUserWithToken(token, replyTo, payLoad) =>
       replyTo ! UserForToken(userRepository.userForToken(token), payLoad)
