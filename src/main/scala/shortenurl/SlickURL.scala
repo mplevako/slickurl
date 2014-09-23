@@ -15,7 +15,7 @@ import spray.can.Http
 import scala.slick.driver.JdbcProfile
 import scala.slick.jdbc.meta.MTable
 
-object ShortenerApp extends App {
+object SlickURL extends App {
   val config = ConfigFactory.load()
 
   //start the cluster
