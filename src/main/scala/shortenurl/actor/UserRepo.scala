@@ -3,7 +3,7 @@
  **/
 package shortenurl.actor
 
-import akka.actor.{Actor, IndirectActorProducer}
+import akka.actor.Actor
 import akka.contrib.pattern.DistributedPubSubExtension
 import akka.contrib.pattern.DistributedPubSubMediator.{Subscribe, SubscribeAck}
 import shortenurl.domain.model.{Error, ErrorCode}
@@ -30,12 +30,5 @@ trait UserRepo extends Actor {
 
     case GetUserWithToken(token, replyTo, payLoad) =>
       replyTo ! UserForToken(userRepository.userForToken(token), payLoad)
-  }
-}
-
-class UserRepoFactory(val userRepo: UserRepositoryComponent#UserRepository) extends IndirectActorProducer {
-  override def actorClass = classOf[UserRepo]
-  override def produce(): Actor = new UserRepo {
-    override val userRepository: UserRepositoryComponent#UserRepository = userRepo
   }
 }

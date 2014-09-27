@@ -5,7 +5,7 @@ package shortenurl.actor
 
 import java.util.Date
 
-import akka.actor.{Actor, IndirectActorProducer}
+import akka.actor.Actor
 import akka.contrib.pattern.DistributedPubSubExtension
 import akka.contrib.pattern.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck}
 import shortenurl.domain.model.{Error, ErrorCode, Link, User}
@@ -88,13 +88,4 @@ trait LinkRepo extends Actor {
     linkRepository.listLinks(user.id, folderId, offset, limit).fold(error => Left(error), l => Right(l.map(link => UrlCode(link.url, link.code))))
 
   def foldersReply(user: User) = Folders(linkRepository.listFolders(user.id))
-}
-
-class LinkRepoFactory(val linkRepo: LinkRepositoryComponent#LinkRepository) extends IndirectActorProducer {
-
-  override def actorClass = classOf[LinkRepo]
-
-  override def produce(): Actor = new LinkRepo {
-    override val linkRepository: LinkRepositoryComponent#LinkRepository = linkRepo
-  }
 }
