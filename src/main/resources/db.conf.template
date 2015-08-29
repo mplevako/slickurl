@@ -1,18 +1,27 @@
 db {
   users {
-    user        = <user>
-    password    = <pwd>
-    url         = "jdbc:postgresql://<host>:<port>/<userdb>"
-    driverClass = "org.postgresql.Driver"
+    dataSourceClass = org.postgresql.ds.PGSimpleDataSource
+    properties = {
+      databaseName = <userdb>
+      user         = <user>
+      password     = <pwd>
+    }
+    connectionTestQuery="select 1"
+    numThreads = <threads number>
   }
 
-  codeSequence.ddl = "create sequence codeseq increment 1 start 128"
-  nextCode.query   = "select nextval('codeseq')"
+  codeSequence.name  = "codeseq"
+  codeSequence.start = 128
+  codeSequence.inc   = 1
 
-  folders {
-    user        = <user>
-    password    = <pwd>
-    url         = "jdbc:postgresql://<host>:<port>/<folderdb>"
-    driverClass = "org.postgresql.Driver"
+  links {
+    dataSourceClass = org.postgresql.ds.PGSimpleDataSource
+    properties = {
+      databaseName = <linksdb>
+      user         = <user>
+      password     = <pwd>
+    }
+    connectionTestQuery="select 1"
+    numThreads = <threads number>
   }
 }

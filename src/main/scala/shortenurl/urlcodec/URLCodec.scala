@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Maxim Plevako
+ * Copyright 2014-2015 Maxim Plevako
  **/
 package shortenurl.urlcodec
 
@@ -21,7 +21,6 @@ object URLCodec {
   def decode(alphabet: String, num: String): Long = {
     if(null != num && num.nonEmpty)
       (0 /: num) { (x,c) => x * alphabet.length + alphabet.indexOf(c) }
-    else
-      -1
+    else -1
   }
 }

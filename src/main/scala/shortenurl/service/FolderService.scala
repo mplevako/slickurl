@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Maxim Plevako
+ * Copyright 2014-2015 Maxim Plevako
  **/
 package shortenurl.service
 
@@ -21,9 +21,9 @@ trait FolderService extends ShortenerService {
     path("folder") {
       get {
         entity(as[ListFolders]) { listFolders: ListFolders =>
-            detach(DetachMagnet.fromUnit()) { ctx =>
+            detach(DetachMagnet.fromUnit(())) { ctx =>
               val replyTo = actorRefFactory.actorOf(Props(classOf[FolderServiceCtxHandler], ctx))
-              mediator ! Publish(`linkRepoTopic`, shortenurl.actor.ListFolders(listFolders.token, replyTo))
+              mediator ! Publish(linkRepoTopic, shortenurl.actor.ListFolders(listFolders.token, replyTo))
             }
         }
       }
@@ -34,9 +34,9 @@ trait FolderService extends ShortenerService {
           if(listLinks.offset.getOrElse(0L) < 0L || listLinks.limit.getOrElse(0L) < 0L)
             complete(StatusCodes.BadRequest)
           else
-          detach(DetachMagnet.fromUnit()) { ctx =>
+          detach(DetachMagnet.fromUnit(())) { ctx =>
             val replyTo = actorRefFactory.actorOf(Props(classOf[FolderServiceCtxHandler], ctx))
-            mediator ! Publish(`linkRepoTopic`, shortenurl.actor.ListLinks(listLinks.token,
+            mediator ! Publish(linkRepoTopic, shortenurl.actor.ListLinks(listLinks.token,
                                Some(folderId), listLinks.offset, listLinks.limit, replyTo))
           }
         }
@@ -52,9 +52,9 @@ class FolderServiceCtxHandler(override val ctx: RequestContext) extends ServiceC
       ctx.complete(folders.map(folder => Folder(folder.id, folder.title)))
       context.stop(self)
 
-    case Right(list: List[_]) =>
+    case Right(seq: Seq[_]) =>
       context.setReceiveTimeout(Duration.Undefined)
-      ctx.complete(list)
+      ctx.complete(seq)
       context.stop(self)
   }
 }

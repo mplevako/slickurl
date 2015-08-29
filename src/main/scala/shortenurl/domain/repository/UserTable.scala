@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Maxim Plevako
+ * Copyright 2014-2015 Maxim Plevako
  **/
 package shortenurl.domain.repository
 
@@ -7,24 +7,23 @@ import shortenurl.domain.model.User
 
 trait UserTable extends Profile {
 
-  import profile.simple._
+  import profile.api._
 
   class Users(tag: Tag) extends Table[User](tag, "USER") {
 
     def id    = column[Long] ("ID")
-    def token = column[String]("TOKEN", O.NotNull, O.DBType("VARCHAR(64)"))
-
-    primaryKey("USER_PK", id)
+    def token = column[String]("TOKEN", O.SqlType("VARCHAR(64)"))
 
     def * = (id, token) <> (User.tupled, User.unapply)
 
+    def pk = primaryKey("USER_PK", id)
     def id_token_idx = index("USER_ID_TOKEN_IDX", (id, token), unique = true)
     def token_id_idx = index("USER_TOKEN_ID_IDX", (token, id), unique = true)
   }
 
-  val users = Users.users
+  lazy val users = Users.users
 
   private object Users {
-    val users = TableQuery[Users]
+    lazy val users = TableQuery[Users]
   }
 }

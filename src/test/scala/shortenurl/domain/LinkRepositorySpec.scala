@@ -1,196 +1,185 @@
 /**
- * Copyright 2014 Maxim Plevako
+ * Copyright 2014-2015 Maxim Plevako
  **/
 package shortenurl.domain
 
 import java.util.Date
 
 import com.typesafe.config.ConfigFactory
-import org.specs2.execute.{AsResult, Result}
 import org.specs2.mutable.Specification
-import org.specs2.specification.{AroundExample, BeforeAfterExample}
+import org.specs2.specification.BeforeAfterExample
 import shortenurl.domain.model._
 import shortenurl.domain.repository.{ClickTable, FolderTable, LinkRepositoryComponent, LinkTable}
 import shortenurl.urlcodec.URLCodec
+import slick.driver.JdbcProfile
 
-import scala.slick.driver.JdbcProfile
-import scala.slick.jdbc.StaticQuery
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
-class LinkRepositorySpec extends Specification with AroundExample with BeforeAfterExample
-                                 with LinkRepositoryComponent with LinkTable with FolderTable
-                                 with ClickTable {
+class LinkRepositorySpec extends Specification with BeforeAfterExample with LinkRepositoryComponent with LinkTable
+                                               with FolderTable with ClickTable {
 
   sequential
 
   ".shortenUrl" should {
     "return CodeAlreadyUsed when the code is already used" in {
-      val e = linkRepository.shortenUrl(existentLink)
-      e must beLeft[Error]
+      linkRepository.shortenUrl(existentLink).map(_ must beLeft[Error]) await
     }
 
     "keep the code if possible" in {
-      val linkWithCode = nonExistentLink.copy(code = Some("cafebabe"))
-      val e = linkRepository.shortenUrl(linkWithCode)
-      e must beRight[Link]
-      e.right.get must_== linkWithCode
+      val linkWithCode = nonExistentLink.copy(code = Option("cafebabe"))
+      linkRepository.shortenUrl(linkWithCode) map { result =>
+        result must beRight[Link]
+        result.right.get must_== linkWithCode
+      } await
     }
 
     "return a short link if the given code is empty" in {
-      val e = linkRepository.shortenUrl(nonExistentLink)
-      e must beRight[Link]
-      e.right.get must_== nonExistentLink.copy(code = Some(encodedIntMaxVal))
+      linkRepository.shortenUrl(nonExistentLink) map { result =>
+        result must beRight[Link]
+        result.right.get must_== nonExistentLink.copy(code = Option(encodedCodeSeqStartVal))
+      } await
     }
   }
 
   ".listLinks" should {
     "list all link for the given user if no folder id is specified" in {
-      val linkWithCode = nonExistentLink.copy(code = Some("cafebabe"))
-      val links = linkRepository.listLinks(1L, None, None, None)
-      links must beRight[List[Link]]
-      links.right.get.size must_== 3
+      val linkWithCode = nonExistentLink.copy(code = Option("cafebabe"))
+      linkRepository.listLinks(1L, None, None, None) map { links =>
+        links must beRight[Seq[Link]]
+        links.right.get.size must_== 3
+      } await
 
-      val ofsLinks = linkRepository.listLinks(1L, None, Some(1L), None)
-      ofsLinks must beRight[List[Link]]
-      ofsLinks.right.get.size must_== 2
+      linkRepository.listLinks(1L, None, Option(1L), None) map { ofsLinks =>
+        ofsLinks must beRight[Seq[Link]]
+        ofsLinks.right.get.size must_== 2
+      } await
 
-      val ofsLimLinks = linkRepository.listLinks(1L, None, Some(1L), Some(1L))
-      ofsLimLinks must beRight[List[Link]]
-      ofsLimLinks.right.get.size must_== 1
-      ofsLimLinks.right.get.head.code must beSome[String]
-      ofsLimLinks.right.get.head.code.get must_== "b"
+      linkRepository.listLinks(1L, None, Option(1L), Option(1L)) map { ofsLimLinks =>
+        ofsLimLinks must beRight[Seq[Link]]
+        ofsLimLinks.right.get.size must_== 1
+        ofsLimLinks.right.get.head.code must beSome[String]
+        ofsLimLinks.right.get.head.code.get must_== "b"
+      } await
     }
 
     "list all link for the given user and folder" in {
-      val ofsLinks = linkRepository.listLinks(1L, Some(existentFolder.id), Some(1L), None)
-      ofsLinks must beRight[List[Link]]
-      ofsLinks.right.get.size must_== 1
-      ofsLinks.right.get must not contain existentLink
+      linkRepository.listLinks(1L, Option(existentFolder.id), Option(1L), None) map { ofsLinks =>
+        ofsLinks must beRight[Seq[Link]]
+        ofsLinks.right.get.size must_== 1
+        ofsLinks.right.get must not contain existentLink
+      } await
 
-      val ofsLimLinks = linkRepository.listLinks(1L, Some(existentFolder.id), Some(1L), Some(1L))
-      ofsLimLinks must beRight[List[Link]]
-      ofsLimLinks.right.get.size must_== 1
-      ofsLinks.right.get must not contain existentLink
+      linkRepository.listLinks(1L, Option(existentFolder.id), Option(1L), Option(1L)) map { ofsLimLinks =>
+        ofsLimLinks must beRight[Seq[Link]]
+        ofsLimLinks.right.get.size must_== 1
+        ofsLimLinks.right.get must not contain existentLink
+      } await
     }
   }
 
   ".listFolders" should {
     "not return anything given an invalid uid" in {
-      val folders = linkRepository.listFolders(-1L)
-      folders must beEmpty
+      linkRepository.listFolders(-1L).map(_ must beEmpty) await
     }
 
     "return only folders for the user with the given token" in {
-      val folders = linkRepository.listFolders(2L)
-      folders.size must_== 1
-      folders must not(contain(existentFolder))
+      linkRepository.listFolders(2L) map { folders =>
+        folders.size must_== 1
+        folders must not(contain(existentFolder))
+      } await
     }
   }
 
   ".passThrough" should {
     "pass the link url" in {
-      val remoteIp = "127.0.0.1"
-      val referer  = "referer"
-      val folders = linkRepository.passThrough(existentLink.code.get, referer, remoteIp)
-      folders must beRight(existentLink.url)
+      import profile.api._
 
-      db withTransaction { implicit session =>
-        import profile.simple._
-        clicks.filter(_.code === existentLink.code.get).filter(_.referer === referer).
-            filter(_.remote_ip === remoteIp).map(_.code).exists.run
-      }
+      linkRepository.passThrough(existentLink.code.get, referer, remoteIp) flatMap { url =>
+        url must beRight(existentLink.url)
+        db run clicks.filter(_.code === existentLink.code.get).filter(_.referrer === referer).filter(_.remote_ip === remoteIp).exists.result
+      } map (_ must beTrue) await
     }
 
     "return an error if the code does not exist" in {
-      val remoteIp = "127.0.0.1"
-      val referer  = "referer"
-      val code     = "nope"
-      val folders = linkRepository.passThrough(code, referer, remoteIp)
-      folders must beLeft(Error(ErrorCode.NonExistentCode))
+      import profile.api._
 
-      db withSession { implicit session =>
-        import profile.simple._
-        !clicks.filter(_.code === code).filter(_.referer === referer).
-            filter(_.remote_ip === remoteIp).map(_.code).exists.run
-      }
+      val code = "nope"
+      linkRepository.passThrough(code, referer, remoteIp) flatMap { url =>
+        url must beLeft(Error(ErrorCode.NonExistentCode))
+        db.run(clicks.filter(_.code === code).filter(_.referrer === referer).filter(_.remote_ip === remoteIp).exists.result)
+      } map (_ must beFalse) await
     }
   }
 
   ".listClicks" should {
     "not return anything given an invalid code" in {
-      val clicks = linkRepository.listClicks("none", 1L, None, None)
-      clicks must beLeft(Error(ErrorCode.NonExistentCode))
+      linkRepository.listClicks("none", 1L, None, None).map(_ must beLeft(Error(ErrorCode.NonExistentCode))) await
 
-      val noClicks = linkRepository.listClicks(encodedLongMaxVal, 1L, None, None)
-      clicks must beLeft(Error(ErrorCode.NonExistentCode))
+      linkRepository.listClicks(encodedLongMaxVal, 1L, None, None).map(_ must beLeft(Error(ErrorCode.NonExistentCode))) await
     }
 
     "return only clicks for the user with the given token" in {
-      val clicks = linkRepository.listClicks(encodedLongMaxVal, Long.MaxValue, None, None)
-      clicks must beRight[List[Click]](List(Click(encodedLongMaxVal, new Date(Long.MaxValue), encodedLongMaxVal, "127.0.0.1")))
+      linkRepository.listClicks(encodedLongMaxVal, Long.MaxValue, None, None).map(_ must beRight[Seq[Click]](Seq(Click(encodedLongMaxVal, new Date(Long.MaxValue), Option(encodedLongMaxVal), remoteIp)))) await
     }
   }
 
   ".linkSummary" should {
     "not return anything given an invalid code" in {
-      val clicks = linkRepository.linkSummary("none", 1L)
-      clicks must beLeft(Error(ErrorCode.NonExistentCode))
+      linkRepository.linkSummary("none", 1L).map(_ must beLeft(Error(ErrorCode.NonExistentCode))) await
     }
 
     "return link summary" in {
-      val clicks = linkRepository.linkSummary("yeah", 1L)
-      clicks must beRight(LinkSummary(existentLink.url, existentLink.code.get, existentLink.folderId, 2L))
+      linkRepository.linkSummary("yeah", 1L).map(_ must beRight(LinkSummary(existentLink.url, existentLink.code.get, existentLink.folderId, 2L))) await
     }
   }
 
-  override val profile: JdbcProfile = scala.slick.driver.H2Driver
+  override val profile: JdbcProfile = slick.driver.H2Driver
   override val linkRepository: LinkRepository = new LinkRepositoryImpl
-  override val db: JdbcProfile#Backend#Database = profile.simple.Database.forURL("jdbc:h2:mem:links", driver = "org.h2.Driver")
+  override val db: profile.api.Database = profile.api.Database.forURL("jdbc:h2:mem:links;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver")
 
+  val config = ConfigFactory.load()
+  val remoteIp = Option("127.0.0.1")
+  val referer  = Option("referer")
   val existentFolder: Folder = Folder(1L, 1L, "A")
-  val existentLink: Link = Link(1L, "https://www.google.com", Some("yeah"), Some(1L))
-  val nonExistentLink: Link = Link(1L, "https://www.google.com", None, Some(1L))
-  val existentClick: Click = Click(existentLink.code.get, new Date(), "referer", "127.0.0.1")
-  val encodedIntMaxVal = URLCodec.encode(ConfigFactory.load().getString("app.shorturl.alphabet"), Int.MaxValue)
+  val existentLink: Link     = Link(1L, "https://www.google.com", Option("yeah"), Option(1L))
+  val nonExistentLink: Link  = Link(1L, "https://www.google.com", None, Option(1L))
+  val existentClick: Click   = Click(existentLink.code.get, new Date(), referer, remoteIp)
+  val encodedCodeSeqStartVal = URLCodec.encode(ConfigFactory.load().getString("app.shorturl.alphabet"), config.getInt("db.codeSequence.start"))
   val encodedLongMaxVal = URLCodec.encode(ConfigFactory.load().getString("app.shorturl.alphabet"), Long.MaxValue)
 
-  import profile.simple._
+  override def before: Unit = {
+    import profile.api._
 
-  override def before: Any =
-    db withTransaction { implicit session =>
-      (folders.ddl ++ links.ddl ++ clicks.ddl).create
-      StaticQuery.updateNA(s"create sequence codeseq increment 1 start ${Int.MaxValue}").execute
-
-      folders.forceInsertAll(
-        existentFolder,
-        Folder(2L, 1L, "B"),
-        Folder(3L, 2L, "C"),
-        Folder(Long.MaxValue, Long.MaxValue, "D")
-      )
-
-      links.forceInsertAll(
-        existentLink,
-        Link(1L, "test", Some("b"), Some(1L)),
-        Link(2L, "test", Some("c"), Some(2L)),
-        Link(1L, "test", Some("d"), Some(3L)),
-        Link(Long.MaxValue, "test", Some(encodedLongMaxVal), Some(Long.MaxValue))
-      )
-
-      clicks.forceInsertAll(
-        existentClick,
-        Click(existentLink.code.get, new Date(), "a", "127.0.0.1"),
-//        Click(existentLink.code.get, new Date(), "b", "0.0.0.1"),
-        Click(encodedLongMaxVal, new Date(Long.MaxValue), encodedLongMaxVal, "127.0.0.1")
-      )
+    val initAction = db run {
+      (folders.schema ++ codeSequence.schema ++ links.schema ++ clicks.schema).create >>
+        folders.forceInsertAll(Seq(
+          existentFolder,
+          Folder(2L, 1L, "B"),
+          Folder(3L, 2L, "C"),
+          Folder(Long.MaxValue, Long.MaxValue, "D")
+        )) >>
+        links.forceInsertAll(Seq(
+          existentLink,
+          Link(1L, "test", Option("b"), Option(1L)),
+          Link(2L, "test", Option("c"), Option(2L)),
+          Link(1L, "test", Option("d"), Option(3L)),
+          Link(Long.MaxValue, "test", Option(encodedLongMaxVal), Option(Long.MaxValue))
+        )) >>
+        clicks.forceInsertAll(Seq(
+          existentClick,
+          Click(existentLink.code.get, new Date(), Option("a"), remoteIp),
+          Click(encodedLongMaxVal, new Date(Long.MaxValue), Option(encodedLongMaxVal), remoteIp)
+        ))
     }
 
-  override def after: Any = db withTransaction { implicit session =>
-    (clicks.ddl ++ folders.ddl ++ links.ddl).drop
-    StaticQuery.updateNA("drop sequence codeseq").execute
+    Await.result(initAction, Duration.Inf)
   }
 
-  override def around[T: AsResult](t: => T): Result = {
-    db.withTransaction { implicit session =>
-      try AsResult(t) finally session.rollback()
-    }
+  override def after: Unit = {
+    import profile.api._
+
+    val disposeAction = db run (clicks.schema ++ folders.schema ++ links.schema ++ codeSequence.schema).drop
+    Await.result(disposeAction, Duration.Inf)
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Maxim Plevako
+ * Copyright 2014-2015 Maxim Plevako
  **/
 package shortenurl.service
 
@@ -17,11 +17,11 @@ trait UserService extends ShortenerService {
 
   val userRoute = {
     path("token") {
-      get {
+      post {
         entity(as[GetUser]) { getUser: GetUser =>
-            detach(DetachMagnet.fromUnit()) { ctx =>
+            detach(DetachMagnet.fromUnit(())) { ctx =>
                 val replyTo = actorRefFactory.actorOf(Props(classOf[UserServiceCtxHandler], ctx))
-                mediator ! Publish(`userRepoTopic`, shortenurl.actor.GetUser(getUser.user_id, getUser.secret, replyTo))
+                mediator ! Publish(userRepoTopic, shortenurl.actor.GetUser(getUser.user_id, getUser.secret, replyTo))
             }
         }
       }
@@ -32,7 +32,7 @@ trait UserService extends ShortenerService {
 class UserServiceCtxHandler(override val ctx: RequestContext) extends ServiceCtxHandler(ctx) {
 
   override def receive = super.receive orElse {
-    case User(id, token) =>
+    case Right(User(id, token)) =>
       context.setReceiveTimeout(Duration.Undefined)
       ctx.complete(token)
       context.stop(self)

@@ -1,0 +1,5 @@
+db {
+  codeSequence.name  = "codeseq"
+  codeSequence.start = 128
+  codeSequence.inc   = 1
+}

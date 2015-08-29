@@ -1,9 +1,9 @@
 /**
- * Copyright 2014 Maxim Plevako
+ * Copyright 2014-2015 Maxim Plevako
  **/
 package shortenurl.domain.repository
 
-import scala.slick.driver.JdbcProfile
+import slick.driver.JdbcProfile
 
 trait Profile {
   val profile: JdbcProfile

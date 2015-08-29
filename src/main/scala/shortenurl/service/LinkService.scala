@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Maxim Plevako
+ * Copyright 2014-2015 Maxim Plevako
  **/
 package shortenurl.service
 
@@ -27,9 +27,9 @@ trait LinkService extends ShortenerService {
     path("link") {
       post {
         entity(as[ShortenLink]) { shortenLink: ShortenLink =>
-            detach(DetachMagnet.fromUnit()) { ctx =>
+            detach(DetachMagnet.fromUnit(())) { ctx =>
                 val replyTo = actorRefFactory.actorOf(Props(classOf[LinkServiceCtxHandler], ctx))
-                mediator ! Publish(`linkRepoTopic`, shortenurl.actor.ShortenLink(shortenLink.token,
+                mediator ! Publish(linkRepoTopic, shortenurl.actor.ShortenLink(shortenLink.token,
                                   shortenLink.url, shortenLink.code, shortenLink.folder_id, replyTo))
             }
         }
@@ -38,9 +38,9 @@ trait LinkService extends ShortenerService {
         entity(as[ListLinks]) { listLinks: ListLinks =>
             if(listLinks.offset.getOrElse(0L) < 0L || listLinks.limit.getOrElse(0L) < 0L) complete(StatusCodes.BadRequest)
             else
-            detach(DetachMagnet.fromUnit()) { ctx =>
+            detach(DetachMagnet.fromUnit(())) { ctx =>
                 val replyTo = actorRefFactory.actorOf(Props(classOf[LinkServiceCtxHandler], ctx))
-                mediator ! Publish(`linkRepoTopic`, shortenurl.actor.ListLinks(listLinks.token,
+                mediator ! Publish(linkRepoTopic, shortenurl.actor.ListLinks(listLinks.token,
                                    None, listLinks.offset, listLinks.limit, replyTo))
             }
         }
@@ -51,9 +51,9 @@ trait LinkService extends ShortenerService {
         entity(as[ListClicks]) { listClicks: ListClicks =>
             if(listClicks.offset.getOrElse(0L) < 0L || listClicks.limit.getOrElse(0L) < 0L) complete(StatusCodes.BadRequest)
             else
-            detach(DetachMagnet.fromUnit()) { ctx =>
+            detach(DetachMagnet.fromUnit(())) { ctx =>
                val replyTo = actorRefFactory.actorOf(Props(classOf[LinkServiceCtxHandler], ctx))
-               mediator ! Publish(`linkRepoTopic`, shortenurl.actor.ListClicks(code, listClicks.token,
+               mediator ! Publish(linkRepoTopic, shortenurl.actor.ListClicks(code, listClicks.token,
                                                         listClicks.offset, listClicks.limit, replyTo))
             }
         }
@@ -62,18 +62,18 @@ trait LinkService extends ShortenerService {
     path( "link" / linkCode) { code =>
       post {
         entity(as[PassThrough]) { passThrough: PassThrough =>
-           detach(DetachMagnet.fromUnit()) { ctx =>
+           detach(DetachMagnet.fromUnit(())) { ctx =>
                val replyTo = actorRefFactory.actorOf(Props(classOf[LinkServiceCtxHandler], ctx))
-               mediator ! Publish(`linkRepoTopic`, shortenurl.actor.PassThrough(code,
+               mediator ! Publish(linkRepoTopic, shortenurl.actor.PassThrough(code,
                                               passThrough.referer, passThrough.remote_ip, replyTo))
            }
         }
       } ~
       get {
         entity(as[GetLinkSummary]) { summary: GetLinkSummary =>
-           detach(DetachMagnet.fromUnit()) { ctx =>
+           detach(DetachMagnet.fromUnit(())) { ctx =>
                val replyTo = actorRefFactory.actorOf(Props(classOf[LinkServiceCtxHandler], ctx))
-               mediator ! Publish(`linkRepoTopic`, shortenurl.actor.GetLinkSummary(code, summary.token,
+               mediator ! Publish(linkRepoTopic, shortenurl.actor.GetLinkSummary(code, summary.token,
                                                                                 replyTo))
            }
         }
@@ -89,9 +89,9 @@ class LinkServiceCtxHandler(override val ctx: RequestContext) extends ServiceCtx
       ctx.complete(Link(url, code.get))
       context.stop(self)
 
-    case Right(list: List[_]) =>
+    case Right(seq: Seq[_]) =>
       context.setReceiveTimeout(Duration.Undefined)
-      ctx.complete(list)
+      ctx.complete(seq)
       context.stop(self)
 
     case Right(summary: shortenurl.domain.model.LinkSummary) =>

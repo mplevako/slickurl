@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Maxim Plevako
+ * Copyright 2014-2015 Maxim Plevako
  **/
 package shortenurl.domain.repository
 
@@ -9,7 +9,7 @@ import java.util.Date
 import shortenurl.domain.model.Click
 
 trait ClickTable extends Profile { this: LinkTable =>
-  import profile.simple._
+  import profile.api._
 
   class Clicks(tag: Tag) extends Table[Click](tag, "CLICK") {
 
@@ -17,20 +17,20 @@ trait ClickTable extends Profile { this: LinkTable =>
       d => new Timestamp(d.getTime), t => new Date(t.getTime)
     )
 
-    def code      = column[String] ("CODE", O.NotNull)
-    def date      = column[Date] ("DATE", O.NotNull)
-    def referer   = column[String] ("REFERER")
-    def remote_ip = column[String] ("REMOTE_IP")
+    def code      = column[String] ("CODE")
+    def date      = column[Date] ("DATE")
+    def referrer  = column[Option[String]] ("REFERRER")
+    def remote_ip = column[Option[String]] ("REMOTE_IP")
 
     def link = foreignKey("LINK_FK", code, links)(_.code, onUpdate = ForeignKeyAction.Restrict, onDelete = ForeignKeyAction.Restrict)
     def link_fk_idx = index("CLICK_CODE_IDX", code)
 
-    def * = (code, date, referer, remote_ip) <> (Click.tupled, Click.unapply)
+    def * = (code, date, referrer, remote_ip) <> (Click.tupled, Click.unapply)
   }
 
-  val clicks = Clicks.clicks
+  lazy val clicks = Clicks.clicks
 
   private object Clicks {
-    val clicks = TableQuery[Clicks]
+    lazy val clicks = TableQuery[Clicks]
   }
 }

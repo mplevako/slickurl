@@ -1,27 +1,23 @@
 /**
- * Copyright 2014 Maxim Plevako
+ * Copyright 2014-2015 Maxim Plevako
  **/
 package shortenurl.domain.repository
 
 import com.typesafe.config.ConfigFactory
 import shortenurl.domain.model.Link
 
-import scala.slick.jdbc.StaticQuery
-
 trait LinkTable extends Profile { this: FolderTable =>
-  val config = ConfigFactory.load()
-
-  import profile.simple._
+  import profile.api._
 
   class Links(tag: Tag) extends Table[Link](tag, "LINK") {
 
-    def uid   = column[Long] ("UID", O.NotNull)
-    def fid   = column[Option[Long]] ("FID", O.Nullable)
-    def url   = column[String] ("URL", O.NotNull)
-    def code  = column[String] ("CODE", O.NotNull)
+    def uid   = column[Long] ("UID")
+    def fid   = column[Option[Long]] ("FID")
+    def url   = column[String] ("URL")
+    def code  = column[String] ("CODE")
 
     def id     = primaryKey("LINK_CODE_PK", code)
-    def folder = foreignKey("FOLDER_FK", fid, folders)(_.id, onUpdate = ForeignKeyAction.Restrict, onDelete = ForeignKeyAction.Restrict)
+    def folder = foreignKey("FOLDER_FK", fid, folders)(_.id.?, onUpdate = ForeignKeyAction.Restrict, onDelete = ForeignKeyAction.Restrict)
 
     def code_uid_idx = index("LINK_CODE_UID_IDX", (code, uid), unique = true)
     def id_url_code_idx = index("LINK_URL_CODE_IDX", (code, url))
@@ -30,19 +26,14 @@ trait LinkTable extends Profile { this: FolderTable =>
     def * = (uid, url, code.?, fid) <> (Link.tupled, Link.unapply)
   }
 
-  val links = Links.links
-  val codeSequence  = CodeSeq //actually must be val codeSequence = Links.codeSequence
+  lazy val links = Links.links
+  lazy val codeSequence = Links.codeSequence
 
   private object Links {
-    val links = TableQuery[Links]
-    //val codeSequence = Sequence[Long]("codeseq") start 128 inc 1
-  }
+    val config = ConfigFactory.load()
 
-  private[repository] object CodeSeq {
-    val codeSeqDDL    = config.getString("db.codeSequence.ddl")
-    val nextCodeQuery = config.getString("db.nextCode.query")
-    val ddl =  StaticQuery.updateNA(codeSeqDDL)
-    val next = StaticQuery.queryNA[Long](nextCodeQuery)
+    lazy val links = TableQuery[Links]
+    lazy val codeSequence = Sequence[Long](config.getString("db.codeSequence.name")) start config.getInt("db.codeSequence.start") inc config.getInt("db.codeSequence.inc")
   }
 }
 
