@@ -1,13 +1,10 @@
-/**
- * Copyright 2014-2015 Maxim Plevako
- **/
 package shortenurl.service
 
 import akka.actor.Props
-import akka.contrib.pattern.DistributedPubSubMediator.Publish
+import akka.cluster.pubsub.DistributedPubSubMediator.Publish
 import shortenurl.actor.Folders
 import spray.http.StatusCodes
-import spray.routing.RequestContext
+import spray.routing.{RequestContext, Route}
 import spray.routing.directives.DetachMagnet
 
 import scala.concurrent.duration._
@@ -17,7 +14,7 @@ case class Folder(id: Long, title: String)
 
 trait FolderService extends ShortenerService {
 
-  val folderRoute = {
+  val folderRoute: Route = {
     path("folder") {
       get {
         entity(as[ListFolders]) { listFolders: ListFolders =>
@@ -46,7 +43,7 @@ trait FolderService extends ShortenerService {
 }
 
 class FolderServiceCtxHandler(override val ctx: RequestContext) extends ServiceCtxHandler(ctx) {
-  override def receive = super.receive orElse {
+  override def receive: Receive = super.receive orElse {
     case Folders(folders) =>
       context.setReceiveTimeout(Duration.Undefined)
       ctx.complete(folders.map(folder => Folder(folder.id, folder.title)))

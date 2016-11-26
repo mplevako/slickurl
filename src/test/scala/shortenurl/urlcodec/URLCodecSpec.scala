@@ -1,6 +1,3 @@
-/**
- * Copyright 2014 Maxim Plevako
- **/
 package shortenurl.urlcodec
 
 import org.specs2.mutable.Specification
@@ -26,9 +23,9 @@ class URLCodecSpec extends Specification {
     }
   }
 
-  val alphabet                = "abcdefghijkmnpqrstuvwxyzABCDEFGHIJKLMNPQRSTUVWXYZ23456789"
-  val encodedAlphabetLength   = alphabet.charAt(1).toString ++ alphabet.charAt(0).toString
-  val encodedIntMaxVal        = "dIA5IR"
-  val encodedLongMaxVal       = "BDjzTwjgkf8"
-  val encodedThreeTimesMaxInt = "dIA5IP"
+  private val alphabet                = "abcdefghijkmnpqrstuvwxyzABCDEFGHIJKLMNPQRSTUVWXYZ23456789"
+  private val encodedAlphabetLength   = alphabet.charAt(1).toString ++ alphabet.charAt(0).toString
+  private val encodedIntMaxVal        = "dIA5IR"
+  private val encodedLongMaxVal       = "BDjzTwjgkf8"
+  private val encodedThreeTimesMaxInt = "dIA5IP"
 }

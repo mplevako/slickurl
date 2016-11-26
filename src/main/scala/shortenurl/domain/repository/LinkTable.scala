@@ -1,6 +1,3 @@
-/**
- * Copyright 2014-2015 Maxim Plevako
- **/
 package shortenurl.domain.repository
 
 import com.typesafe.config.ConfigFactory

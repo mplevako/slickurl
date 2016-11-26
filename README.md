@@ -43,32 +43,24 @@ The services operate with JSON and have the following API
 
 | Verb   | Resource           | Request Params                             | Response Data                                        | HTTP Status Code                                              |
 |--------|--------------------|--------------------------------------------|------------------------------------------------------|---------------------------------------------------------------|
-| ------ | ----------         | -----------------------                    | ----------------------                               | ------------------                                            |
 | GET    | /token             | {user_id, api secret}                      | token                                                | 200 OK                                                        |
-|        |                    |                                            |                                                      |                                                               |
 |        |                    |                                            | 'wrong_secret'                                       | 401 Unauthorized                                              |
 |        |                    |                                            |                                                      |                                                               |
-|        |                    |                                            |                                                      |                                                               |
 | POST   | /link              | {token, url, code [opt], folder_id [opt] } | link (url, code)                                     | 200 OK                                                        |
-|        |                    |                                            |                                                      |                                                               |
 |        |                    |                                            | 'invalid_token'                                      | 400 Bad Request                                               |
 |        |                    |                                            | 'invalid_folder'                                     | 400 Bad Request                                               |
 |        |                    |                                            |                                                      |                                                               |
 | POST   | /link/$code        | {referrer, remote_ip }                     | link url to pass through                             | 200 OK                                                        |
-|        |                    |                                            |                                                      |                                                               |
 |        |                    |                                            | 'nonexistent_code'                                   | 404 Not Found                                                 |
 |        |                    |                                            |                                                      |                                                               |
 | GET    | /link/$code        | {token }                                   | {link (url, code), folder_id (opt), count of clicks} | 200 OK                                                        |
-|        |                    |                                            |                                                      |                                                               |
 |        |                    |                                            | 'nonexistent_code'                                   | 404 Not Found                                                 |
 |        |                    |                                            |                                                      |                                                               |
 | GET    | /link              | {token, offset [opt = 0], limit [opt] }    | {list of links (url, code)}                          | 200 OK                                                        |
-|        |                    |                                            |                                                      |                                                               |
 |        |                    |                                            | 'invalid_token'                                      | 400 Bad Request                                               |
 |        |                    |                                            |                                                      | 400 Bad Request if the offset or the limit are less than zero |
 |        |                    |                                            |                                                      |                                                               |
 | GET    | /link/$code/clicks | {token, offset [opt = 0], limit [opt] }    | {list of clicks}                                     | 200 OK                                                        |
-|        |                    |                                            |                                                      |                                                               |
 |        |                    |                                            | 'nonexistent_code'                                   | 404 Not Found                                                 |
 |        |                    |                                            |                                                      | 400 Bad Request if the offset or the limit are less than zero |
 |        |                    |                                            |                                                      |                                                               |
@@ -79,6 +71,4 @@ The services operate with JSON and have the following API
 |        |                    |                                            |                                                      | 400 Bad Request if the offset or the limit are less than zero |
 |        |                    |                                            |                                                      |                                                               |
 | GET    | /folder            | {token }                                   | {list of folders (id, title) }                       | 200 OK                                                        |
-|        |                    |                                            |                                                      |                                                               |
 |        |                    |                                            | 'invalid_token'                                      | 400 Bad Request                                               |
-|        |                    |                                            |                                                      |                                                               |

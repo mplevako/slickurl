@@ -1,6 +1,3 @@
-/**
- * Copyright 2014-2015 Maxim Plevako
- **/
 package shortenurl.domain.repository
 
 import java.sql.Timestamp
@@ -13,7 +10,7 @@ trait ClickTable extends Profile { this: LinkTable =>
 
   class Clicks(tag: Tag) extends Table[Click](tag, "CLICK") {
 
-    implicit val DateMapper = MappedColumnType.base[Date, Timestamp](
+    implicit private val DateMapper = MappedColumnType.base[Date, Timestamp](
       d => new Timestamp(d.getTime), t => new Date(t.getTime)
     )
 

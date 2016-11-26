@@ -1,15 +1,13 @@
-/**
- * Copyright 2014-2015 Maxim Plevako
- **/
 package shortenurl.service
 
 import akka.actor.Props
-import akka.contrib.pattern.DistributedPubSubMediator.Publish
+import akka.cluster.pubsub.DistributedPubSubMediator.Publish
 import spray.http.StatusCodes
-import spray.routing.RequestContext
+import spray.routing.{RequestContext, Route}
 import spray.routing.directives.DetachMagnet
 
 import scala.concurrent.duration._
+import scala.util.matching.Regex
 
 private[shortenurl] case class ShortenLink(token: String, url: String, code: Option[String], folder_id: Option[Long])
 private[shortenurl] case class ListLinks(token: String, offset: Option[Long], limit: Option[Long])
@@ -21,9 +19,9 @@ private[shortenurl] case class Link(url: String, code: String)
 
 trait LinkService extends ShortenerService {
 
-  val linkCode = s"""[${config.getString("app.shorturl.alphabet")}]+""".r
+  private val linkCode: Regex = s"""[${config.getString("app.shorturl.alphabet")}]+""".r
 
-  val linkRoute = {
+  val linkRoute: Route = {
     path("link") {
       post {
         entity(as[ShortenLink]) { shortenLink: ShortenLink =>
@@ -83,7 +81,7 @@ trait LinkService extends ShortenerService {
 }
 
 class LinkServiceCtxHandler(override val ctx: RequestContext) extends ServiceCtxHandler(ctx) {
-  override def receive = super.receive orElse {
+  override def receive: Receive = super.receive orElse {
     case Right(shortenurl.domain.model.Link(_, url, code, _)) =>
       context.setReceiveTimeout(Duration.Undefined)
       ctx.complete(Link(url, code.get))

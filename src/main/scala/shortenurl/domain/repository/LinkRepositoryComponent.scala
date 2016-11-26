@@ -1,6 +1,3 @@
-/**
- * Copyright 2014-2015 Maxim Plevako
- **/
 package shortenurl.domain.repository
 
 import java.util.Date
@@ -16,7 +13,7 @@ import scala.util.{Failure, Success}
 trait LinkRepositoryComponent {
   this: ClickTable with LinkTable with FolderTable =>
 
-  val shortUrlAlphabet = ConfigFactory.load().getString("app.shorturl.alphabet")
+  val shortUrlAlphabet: String = ConfigFactory.load().getString("app.shorturl.alphabet")
 
   val linkRepository: LinkRepository
 

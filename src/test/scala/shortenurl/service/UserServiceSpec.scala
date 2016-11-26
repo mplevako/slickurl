@@ -1,9 +1,6 @@
-/**
- * Copyright 2014 Maxim Plevako
- **/
 package shortenurl.service
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.TestProbe
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
@@ -42,7 +39,7 @@ class UserServiceSpec extends Specification with Specs2RouteTest with UserServic
     }
   }
 
-  override def actorRefFactory = system
-  val testProbe = TestProbe()
+  override def actorRefFactory: ActorSystem = system
+  private val testProbe = TestProbe()
   override val mediator: ActorRef = testProbe.ref
 }

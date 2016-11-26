@@ -1,6 +1,3 @@
-/**
- * Copyright 2015 Maxim Plevako
- **/
 package shortenurl.domain.repository
 
 import java.sql.SQLException

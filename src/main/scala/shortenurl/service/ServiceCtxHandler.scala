@@ -1,10 +1,7 @@
-/**
- * Copyright 2014 Maxim Plevako
- **/
 package shortenurl.service
 
-import akka.actor.{Actor, ReceiveTimeout}
-import akka.contrib.pattern.DistributedPubSubExtension
+import akka.actor.{Actor, ActorRef, ReceiveTimeout}
+import akka.cluster.pubsub.DistributedPubSub
 import com.typesafe.config.ConfigFactory
 import org.json4s.{DefaultFormats, Formats}
 import shortenurl.domain.model.{Error, ErrorCode}
@@ -16,11 +13,10 @@ import scala.concurrent.duration._
 
 class ServiceCtxHandler(val ctx: RequestContext) extends Actor with Json4sSupport {
   context.setReceiveTimeout(ConfigFactory.load().getInt("app.http.handler.timeout") milliseconds)
-  val mediator = DistributedPubSubExtension(context.system).mediator
 
   override implicit val json4sFormats: Formats = DefaultFormats
 
-  def receive = {
+  def receive: Receive = {
     case ReceiveTimeout =>
       context.setReceiveTimeout (Duration.Undefined)
       ctx.complete(StatusCodes.GatewayTimeout)

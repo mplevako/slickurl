@@ -1,17 +1,16 @@
+*.class
 *.log
 
 # IntelliJ
 .idea/
 
-# akka specific
-logs/*
+# AKKA specific
+logs/
 
 # sbt specific
 .cache/
 .history/
 .lib/
-dist/*
 target/
 lib_managed/
-project/boot/
-project/plugins/project/
+project/

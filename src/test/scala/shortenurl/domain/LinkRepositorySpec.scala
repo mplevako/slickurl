@@ -1,6 +1,3 @@
-/**
- * Copyright 2014-2015 Maxim Plevako
- **/
 package shortenurl.domain
 
 import java.util.Date
@@ -44,7 +41,6 @@ class LinkRepositorySpec extends Specification with BeforeAfterExample with Link
 
   ".listLinks" should {
     "list all link for the given user if no folder id is specified" in {
-      val linkWithCode = nonExistentLink.copy(code = Option("cafebabe"))
       linkRepository.listLinks(1L, None, None, None) map { links =>
         links must beRight[Seq[Link]]
         links.right.get.size must_== 3
@@ -138,15 +134,15 @@ class LinkRepositorySpec extends Specification with BeforeAfterExample with Link
   override val linkRepository: LinkRepository = new LinkRepositoryImpl
   override val db: profile.api.Database = profile.api.Database.forURL("jdbc:h2:mem:links;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver")
 
-  val config = ConfigFactory.load()
-  val remoteIp = Option("127.0.0.1")
-  val referer  = Option("referer")
-  val existentFolder: Folder = Folder(1L, 1L, "A")
-  val existentLink: Link     = Link(1L, "https://www.google.com", Option("yeah"), Option(1L))
-  val nonExistentLink: Link  = Link(1L, "https://www.google.com", None, Option(1L))
-  val existentClick: Click   = Click(existentLink.code.get, new Date(), referer, remoteIp)
-  val encodedCodeSeqStartVal = URLCodec.encode(ConfigFactory.load().getString("app.shorturl.alphabet"), config.getInt("db.codeSequence.start"))
-  val encodedLongMaxVal = URLCodec.encode(ConfigFactory.load().getString("app.shorturl.alphabet"), Long.MaxValue)
+  private val config = ConfigFactory.load()
+  private val remoteIp = Option("127.0.0.1")
+  private val referer  = Option("referer")
+  private val existentFolder: Folder = Folder(1L, 1L, "A")
+  private val existentLink: Link     = Link(1L, "https://www.google.com", Option("yeah"), Option(1L))
+  private val nonExistentLink: Link  = Link(1L, "https://www.google.com", None, Option(1L))
+  private val existentClick: Click   = Click(existentLink.code.get, new Date(), referer, remoteIp)
+  private val encodedCodeSeqStartVal = URLCodec.encode(ConfigFactory.load().getString("app.shorturl.alphabet"), config.getInt("db.codeSequence.start"))
+  private val encodedLongMaxVal = URLCodec.encode(ConfigFactory.load().getString("app.shorturl.alphabet"), Long.MaxValue)
 
   override def before: Unit = {
     import profile.api._
