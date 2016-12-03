@@ -1,4 +1,11 @@
 db {
+
+  code.sequence {
+    name  = "codeseq"
+    start = 0
+    inc   = 1
+  }
+
   users {
     dataSourceClass = org.postgresql.ds.PGSimpleDataSource
     properties = {
@@ -9,10 +16,6 @@ db {
     connectionTestQuery="select 1"
     numThreads = <threads number>
   }
-
-  codeSequence.name  = "codeseq"
-  codeSequence.start = 128
-  codeSequence.inc   = 1
 
   links {
     dataSourceClass = org.postgresql.ds.PGSimpleDataSource

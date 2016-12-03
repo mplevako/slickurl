@@ -5,9 +5,9 @@ scalaVersion := "2.11.8"
 scalacOptions in GlobalScope ++= Seq("encoding", "UTF-8", "-language:postfixOps", "-deprecation")
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.14"
+  val akkaVersion = "2.4.16"
   val sprayVersion = "1.3.4"
-  val slf4jVersion: String = "1.7.21"
+  val slf4jVersion: String = "1.7.22"
   Seq(
     "org.postgresql"      %   "postgresql"        % "9.4.1212",
     "com.zaxxer"          %   "HikariCP"          % "2.5.1",

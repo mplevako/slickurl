@@ -14,7 +14,7 @@
 ## Config
  Start by copying *resources\db.conf.template* to *resources\db.conf* and filling the entries for the user database and the links/folders/statistics one. Feel free to make them different.
  
- You can also edit *application.conf* to change your *api.secret*, the alphabet (*app.shorturl.alphabet*) used to shorten URLs (by
+ You can also edit *application.conf* to change your *app.api.secret*, the alphabet (*app.encoding.alphabet*) used to shorten URLs (by
  default it lacks hard to distinguish symbols 1,0,l,O,o), http handler timeout (*app.http.handler.timeout*), the interface (*app.http.server.if*) and the port(*app.http.server.port*) to run the http server on. You can even change the distributed pub-sub topic names used to exchange users, links, folders, statistics as well as errors.
  
 ## Setup
