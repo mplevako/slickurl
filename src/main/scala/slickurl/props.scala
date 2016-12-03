@@ -30,10 +30,8 @@ object AppConfig {
 object DbConfig {
   private val dbConfig = ConfigFactory.load().getConfig("db")
 
-  private[slickurl] val codeSequenceName: String = dbConfig.getString("code.sequence.name")
-  private[slickurl] val codeSequenceStart: Long = dbConfig.getLong("code.sequence.start")
-  private[slickurl] val codeSequenceInc: Long = dbConfig.getLong("code.sequence.inc")
+  private[slickurl] val idSequenceStart: Long = dbConfig.getLong("id.sequence.start")
+  private[slickurl] val idSequenceInc: Long = dbConfig.getLong("id.sequence.inc")
 
-  require(codeSequenceName != null && !codeSequenceName.isEmpty)
-  require(codeSequenceStart >= 0 && codeSequenceInc > 0)
+  require(idSequenceStart >= 0 && idSequenceInc > 0)
 }

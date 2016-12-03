@@ -141,14 +141,14 @@ class LinkRepositorySpec extends Specification with BeforeAfterExample with Link
   private val existentLink: Link     = Link(1L, "https://www.google.com", Option("yeah"), Option(1L))
   private val nonExistentLink: Link  = Link(1L, "https://www.google.com", None, Option(1L))
   private val existentClick: Click   = Click(existentLink.code.get, new Date(), referer, remoteIp)
-  private val encodedCodeSeqStartVal = URLCodec.encode(encodingAlphabet, codeSequenceStart)
+  private val encodedCodeSeqStartVal = URLCodec.encode(encodingAlphabet, idSequenceStart)
   private val encodedLongMaxVal = URLCodec.encode(encodingAlphabet, Long.MaxValue)
 
   override def before: Unit = {
     import profile.api._
 
     val initAction = db run {
-      (folders.schema ++ codeSequence.schema ++ links.schema ++ clicks.schema).create >>
+      (folders.schema ++ idSequence.schema ++ links.schema ++ clicks.schema).create >>
         folders.forceInsertAll(Seq(
           existentFolder,
           Folder(2L, 1L, "B"),
@@ -175,7 +175,7 @@ class LinkRepositorySpec extends Specification with BeforeAfterExample with Link
   override def after: Unit = {
     import profile.api._
 
-    val disposeAction = db run (clicks.schema ++ folders.schema ++ links.schema ++ codeSequence.schema).drop
+    val disposeAction = db run (clicks.schema ++ folders.schema ++ links.schema ++ idSequence.schema).drop
     Await.result(disposeAction, Duration.Inf)
   }
 }

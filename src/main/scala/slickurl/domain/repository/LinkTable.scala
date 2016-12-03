@@ -24,11 +24,11 @@ trait LinkTable extends Profile { this: FolderTable =>
   }
 
   lazy val links = Links.links
-  lazy val codeSequence = Links.codeSequence
+  lazy val idSequence = Links.idSequence
 
   private object Links {
     lazy val links = TableQuery[Links]
-    lazy val codeSequence = Sequence[Long](codeSequenceName) start codeSequenceStart inc codeSequenceInc
+    lazy val idSequence = Sequence[Long]("LINK_ID_SEQUENCE") start idSequenceStart inc idSequenceInc
   }
 }
 

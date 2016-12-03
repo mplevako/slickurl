@@ -67,7 +67,7 @@ class LinkRepositoryApp(implicit val system: ActorSystem) extends LinkTable with
   implicit private val ec: ExecutionContextExecutor = system.dispatcher
 
   private val initLinksDb = db run (MTable.getTables("LINK") flatMap {
-    case v if v.isEmpty => (folders.schema ++ codeSequence.schema ++ links.schema ++ clicks.schema).create
+    case v if v.isEmpty => (folders.schema ++ idSequence.schema ++ links.schema ++ clicks.schema).create
     case _ => successful(())
   })
 

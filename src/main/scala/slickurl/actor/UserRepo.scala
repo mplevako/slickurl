@@ -21,11 +21,17 @@ trait UserRepo extends Actor {
   }
 
   def ready: Receive = {
-    case GetUser(userId, secret, replyTo) if secret == apiSecret =>
-      userRepository.getUser(userId) pipeTo replyTo
+    case CreateNewUser(secret, replyTo) if secret != apiSecret =>
+      replyTo ! Error(ErrorCode.WrongSecret)
 
     case GetUser(_, secret, replyTo) if secret != apiSecret =>
       replyTo ! Error(ErrorCode.WrongSecret)
+
+    case CreateNewUser(secret, replyTo) if secret == apiSecret =>
+      userRepository.createNewUser() pipeTo replyTo
+
+    case GetUser(userId, secret, replyTo) if secret == apiSecret =>
+      userRepository.getUser(userId) pipeTo replyTo
 
     case GetUserWithToken(token, replyTo, payLoad) =>
       val userForToken = userRepository.userForToken(token) map(UserForToken(_, payLoad))

@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import slickurl.domain.model.{Folder, User}
 
 private[slickurl] case class GetUser(userId: Long, secret: String, replyTo: ActorRef)
+private[slickurl] case class CreateNewUser(secret: String, replyTo: ActorRef)
 private[slickurl] case class GetUserWithToken(token: String, replyTo: ActorRef, payLoad: Option[Any])
 private[slickurl] case class UserForToken(uid: Option[User], payLoad: Option[Any])
 

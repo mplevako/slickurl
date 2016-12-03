@@ -43,8 +43,11 @@ The services operate with JSON and have the following API
 
 | Verb   | Resource           | Request Params                             | Response Data                                        | HTTP Status Code                                              |
 |--------|--------------------|--------------------------------------------|------------------------------------------------------|---------------------------------------------------------------|
-| GET    | /token             | {user_id, api secret}                      | token                                                | 200 OK                                                        |
-|        |                    |                                            | 'wrong_secret'                                       | 401 Unauthorized                                              |
+| POST   | /token             | `X-Secret-Token` header with `api.secret`  | token                                                | 200 OK                                                        |
+|        |                    |                                            |                                                      | 401 Unauthorized                                              |
+|        |                    |                                            |                                                      |                                                               |
+| GET    | /token             | {user_id}                                  | token                                                | 200 OK                                                        |
+|        |                    | `X-Secret-Token` header with `api.secret`  |                                                      | 401 Unauthorized                                              |
 |        |                    |                                            |                                                      |                                                               |
 | POST   | /link              | {token, url, code [opt], folder_id [opt] } | link (url, code)                                     | 200 OK                                                        |
 |        |                    |                                            | 'invalid_token'                                      | 400 Bad Request                                               |

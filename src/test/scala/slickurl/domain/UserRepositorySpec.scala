@@ -2,7 +2,7 @@ package slickurl.domain
 
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterExample
-import slickurl.domain.model.User
+import slickurl.domain.model.{Error, ErrorCode, User}
 import slickurl.domain.repository.{UserRepositoryComponent, UserTable}
 import slick.driver.JdbcProfile
 
@@ -13,22 +13,7 @@ class UserRepositorySpec extends Specification with BeforeAfterExample with User
 
   sequential
 
-  ".findById" should {
-
-    "return an Option containing the expected User for the given id" in {
-      userRepository.findById(testUser.id) map { user =>
-        user must beSome[User]
-        user.get.id must_== testUser.id
-      } await
-    }
-
-    "return None if there is no User with the given id" in {
-      userRepository.findById(-1L) must beNone.await()
-    }
-  }
-
-  ".findByToken" should {
-
+  ".userForToken" should {
     "return an Option containing the expected User with the given token" in {
       userRepository.userForToken(testUser.token) map { user =>
         user must beSome[User]
@@ -41,18 +26,25 @@ class UserRepositorySpec extends Specification with BeforeAfterExample with User
     }
   }
 
-  ".getOrCreateUser" should {
+  ".createNewUser" should {
+    "create a new user and return its token" in {
+      userRepository.createNewUser() map { result =>
+        result must beRight
+        result.right.get.token must not(beEmpty)
+      } await
+    }
+  }
 
+  ".getUser" should {
     "return an existing User for an existing id" in {
       userRepository.getUser(testUser.id) map { user =>
         user must beRight(testUser)
       } await
     }
 
-    "create and return a new token for a nonexistent user" in {
-      userRepository.getUser(-1L) map { result =>
-        result must beRight
-        result.right.get.token must not(beEmpty)
+    "return the Unknown error for a nonexistent user" in {
+      userRepository.getUser(-1L) map { user =>
+        user must beLeft(Error(ErrorCode.Unknown))
       } await
     }
   }
@@ -66,14 +58,14 @@ class UserRepositorySpec extends Specification with BeforeAfterExample with User
   override protected def before: Any = {
     import profile.api._
 
-    val initAction = db run (users.schema.create >> users.forceInsert(testUser))
+    val initAction = db run ((users.schema ++ idSequence.schema).create >> users.forceInsert(testUser))
     Await.result(initAction, Duration.Inf)
   }
 
   override protected def after: Any = {
     import profile.api._
 
-    val cleanAction = db run users.schema.drop
+    val cleanAction = db run (users.schema ++ idSequence.schema).drop
     Await.result(cleanAction, Duration.Inf)
   }
 }

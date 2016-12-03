@@ -1,5 +1,6 @@
 package slickurl.domain.repository
 
+import slickurl.DbConfig._
 import slickurl.domain.model.User
 
 trait UserTable extends Profile {
@@ -19,8 +20,10 @@ trait UserTable extends Profile {
   }
 
   lazy val users = Users.users
+  lazy val idSequence = Users.idSequence
 
   private object Users {
     lazy val users = TableQuery[Users]
+    lazy val idSequence = Sequence[Long]("USER_ID_SEQUENCE") start idSequenceStart inc idSequenceInc
   }
 }

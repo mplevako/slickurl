@@ -73,7 +73,7 @@ trait LinkRepositoryComponent {
 
       codeExists(link.code, None).flatMap {
         case true  => successful(Left(Error(ErrorCode.CodeTaken)))
-        case false => link.code.fold(codeSequence.next.result flatMap generateNextURL(link))(_ => tryInsertLink(link))
+        case false => link.code.fold(idSequence.next.result flatMap generateNextURL(link))(_ => tryInsertLink(link))
       }
     }
 
