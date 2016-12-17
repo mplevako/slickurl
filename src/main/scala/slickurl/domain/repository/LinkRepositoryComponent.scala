@@ -4,7 +4,6 @@ import java.util.Date
 
 import slickurl.AppConfig._
 import slickurl.domain.model._
-import slickurl.urlcodec.URLCodec
 import slick.dbio.Effect._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -67,7 +66,7 @@ trait LinkRepositoryComponent {
       }
 
       def generateNextURL(link: Link): Long => DBIOAction[Error Either Link, NoStream, Effect.Write] = (nextCode: Long) => {
-        val shortLink = link.copy(code = Option(URLCodec.encode(encodingAlphabet, nextCode)))
+        val shortLink = link.copy(code = Option(AlphabetCodec.encode(encodingAlphabet, nextCode)))
         tryInsertLink(shortLink)
       }
 

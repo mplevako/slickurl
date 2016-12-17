@@ -9,7 +9,6 @@ import slickurl.AppConfig._
 import slickurl.DbConfig._
 import slickurl.domain.model._
 import slickurl.domain.repository.{ClickTable, FolderTable, LinkRepositoryComponent, LinkTable}
-import slickurl.urlcodec.URLCodec
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -141,8 +140,8 @@ class LinkRepositorySpec extends Specification with BeforeAfterExample with Link
   private val existentLink: Link     = Link(1L, "https://www.google.com", Option("yeah"), Option(1L))
   private val nonExistentLink: Link  = Link(1L, "https://www.google.com", None, Option(1L))
   private val existentClick: Click   = Click(existentLink.code.get, new Date(), referer, remoteIp)
-  private val encodedCodeSeqStartVal = URLCodec.encode(encodingAlphabet, idSequenceStart)
-  private val encodedLongMaxVal = URLCodec.encode(encodingAlphabet, Long.MaxValue)
+  private val encodedCodeSeqStartVal = AlphabetCodec.encode(encodingAlphabet, idSequenceStart)
+  private val encodedLongMaxVal = AlphabetCodec.encode(encodingAlphabet, Long.MaxValue)
 
   override def before: Unit = {
     import profile.api._
