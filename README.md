@@ -12,10 +12,12 @@
  Finally, Reactive Slick allows of getting the best out of accessing a relational data store asynchronously.
  
 ## Config
- Start by copying *resources\db.conf.template* to *resources\db.conf* and filling the entries for the user database and the links/folders/statistics one. Feel free to make them different.
+ Start by copying *resources/application.conf.template* to *resources/application.conf* and *resources/db.conf.template* to *resources/db.conf*.
+ Generate RSA private/public key pair, store them in PKCS8/X509 encoded formats and put their paths in the *api.privatekey*/*api.publickey* entries in *application.conf*.
+ Also fill the entries for the user database and the links/folders/statistics one.
  
- You can also edit *application.conf* to change your *app.api.secret*, the alphabet (*app.encoding.alphabet*) used to shorten URLs (by
- default it lacks hard to distinguish symbols 1,0,l,O,o), http handler timeout (*app.http.handler.timeout*), the interface (*app.http.server.if*) and the port(*app.http.server.port*) to run the http server on. You can even change the distributed pub-sub topic names used to exchange users, links, folders, statistics as well as errors.
+ You can optionally change the alphabet (*app.encoding.alphabet*) used to shorten URLs (by default it lacks hard to distinguish symbols 1,0,l,O,o), http handler timeout (*app.http.handler.timeout*),
+  the interface (*app.http.server.if*) and the port(*app.http.server.port*) to run the http server on. You can even change the distributed pub-sub topic names used to exchange users, links, folders, statistics as well as errors.
  
 ## Setup
  To build the project you should install [SBT](http://www.scala-sbt.org/). Having installed it simply type
@@ -43,35 +45,36 @@ The services operate with JSON and have the following API
 
 | Verb   | Resource           | Request Params                             | Response Data                                        | HTTP Status Code                                              |
 |--------|--------------------|--------------------------------------------|------------------------------------------------------|---------------------------------------------------------------|
-| POST   | /token             | `X-Secret-Token` header with `api.secret`  | token                                                | 200 OK                                                        |
-|        |                    |                                            |                                                      | 401 Unauthorized                                              |
+| POST   | /token             | `X-Authentication-Token` header with a JWT | A JWT token you have to provide back in the          | 200 OK                                                        |
+|        |                    |                                            | `X-Authentication-Token` header when calling the     | 401 Unauthorized                                              |
+|        |                    |                                            | following endpoints                                  |                                                               |
 |        |                    |                                            |                                                      |                                                               |
-| GET    | /token             | {user_id}                                  | token                                                | 200 OK                                                        |
-|        |                    | `X-Secret-Token` header with `api.secret`  |                                                      | 401 Unauthorized                                              |
-|        |                    |                                            |                                                      |                                                               |
-| POST   | /link              | {token, url, code [opt], folder_id [opt] } | link (url, code)                                     | 200 OK                                                        |
-|        |                    |                                            | 'invalid_token'                                      | 400 Bad Request                                               |
-|        |                    |                                            | 'invalid_folder'                                     | 400 Bad Request                                               |
+| POST   | /link              | {url, folder_id [opt] }                    | link (url, code)                                     | 200 OK                                                        |
+|        |                    | `X-Authentication-Token` header with a JWT | 'invalid_folder'  			                          | 400 Bad Request                                               |
+|        |                    |                                            |                               			              | 401 Unauthorized                                              |
 |        |                    |                                            |                                                      |                                                               |
 | POST   | /link/$code        | {referrer, remote_ip }                     | link url to pass through                             | 200 OK                                                        |
 |        |                    |                                            | 'nonexistent_code'                                   | 404 Not Found                                                 |
+|        |                    |                                            |                               			              | 401 Unauthorized                                              |
 |        |                    |                                            |                                                      |                                                               |
-| GET    | /link/$code        | {token }                                   | {link (url, code), folder_id (opt), count of clicks} | 200 OK                                                        |
+| GET    | /link/$code        | `X-Authentication-Token` header with a JWT | {link (url, code), folder_id (opt), count of clicks} | 200 OK                                                        |
 |        |                    |                                            | 'nonexistent_code'                                   | 404 Not Found                                                 |
+|        |                    |                                            |                               			              | 401 Unauthorized                                              |
 |        |                    |                                            |                                                      |                                                               |
-| GET    | /link              | {token, offset [opt = 0], limit [opt] }    | {list of links (url, code)}                          | 200 OK                                                        |
-|        |                    |                                            | 'invalid_token'                                      | 400 Bad Request                                               |
+| GET    | /link              | {offset [opt = 0], limit [opt] }           | {list of links (url, code)}                          | 200 OK                                                        |
+|        |                    | `X-Authentication-Token` header with a JWT |                                                      | 400 Bad Request if the offset or the limit are less than zero |
+|        |                    |                                            |                                                      | 401 Unauthorized                                              |
+|        |                    |                                            |                                                      |                                                               |
+| GET    | /link/$code/clicks | {offset [opt = 0], limit [opt] }  	       | {list of clicks}                                     | 200 OK                                                        |
+|        |                    | `X-Authentication-Token` header with a JWT | 'nonexistent_code'                                   | 404 Not Found                                                 |
 |        |                    |                                            |                                                      | 400 Bad Request if the offset or the limit are less than zero |
+|        |                    |                                            |                               			              | 401 Unauthorized                                              |
 |        |                    |                                            |                                                      |                                                               |
-| GET    | /link/$code/clicks | {token, offset [opt = 0], limit [opt] }    | {list of clicks}                                     | 200 OK                                                        |
-|        |                    |                                            | 'nonexistent_code'                                   | 404 Not Found                                                 |
-|        |                    |                                            |                                                      | 400 Bad Request if the offset or the limit are less than zero |
-|        |                    |                                            |                                                      |                                                               |
-| GET    | /folder/$id        | {token, offset [opt = 0], limit [opt] }    | {list of links (url, code)}                          | 200 OK                                                        |
-|        |                    |                                            |                                                      |                                                               |
+| GET    | /folder/$id        | {offset [opt = 0], limit [opt] } 	       | {list of links (url, code)}                          | 200 OK                                                        |
+|        |                    | `X-Authentication-Token` header with a JWT |                               			              | 401 Unauthorized                                              |
 |        |                    |                                            | 'invalid_token'                                      | 400 Bad Request                                               |
 |        |                    |                                            | 'invalid_folder'                                     | 400 Bad Request                                               |
 |        |                    |                                            |                                                      | 400 Bad Request if the offset or the limit are less than zero |
 |        |                    |                                            |                                                      |                                                               |
-| GET    | /folder            | {token }                                   | {list of folders (id, title) }                       | 200 OK                                                        |
-|        |                    |                                            | 'invalid_token'                                      | 400 Bad Request                                               |
+| GET    | /folder            | `X-Authentication-Token` header with a JWT | {list of folders (id, title) }                       | 200 OK                                                        |
+|        |                    |                                            |                               			              | 401 Unauthorized                                              |

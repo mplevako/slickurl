@@ -1,6 +1,6 @@
 package slickurl.domain.repository
 
-import slickurl.domain.model.Folder
+import slickurl.domain.model.{Folder, UserID}
 
 trait FolderTable extends Profile {
 
@@ -9,7 +9,7 @@ trait FolderTable extends Profile {
   class Folders(tag: Tag) extends Table[Folder](tag, "FOLDER") {
 
     def id    = column[Long]("ID")
-    def uid   = column[Long]("UID")
+    def uid   = column[UserID]("UID")
     def title = column[String]("TITLE")
 
     def pk = primaryKey("FOLDER_PK", id)

@@ -1,75 +1,57 @@
 package slickurl.service
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.testkit.TestProbe
-import org.specs2.mock.Mockito
-import org.specs2.mutable.Specification
-import spray.http.HttpHeaders.RawHeader
+import akka.cluster.pubsub.DistributedPubSub
+import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
+import slickurl.AppProps.{tokenGroup, tokenTopic}
+import slickurl.JWTUtils
+import slickurl.actor.AkkaTestkitSpecs2Support
+import slickurl.mock.UserRepositoryMock
 import spray.http.StatusCodes._
-import spray.routing.AuthenticationFailedRejection
-import spray.testkit.Specs2RouteTest
 
-class UserServiceSpec extends Specification with Specs2RouteTest with UserService with Mockito {
-
-  private val nullSecretTokenHeader = RawHeader(SecretTokenHeader, null)
-  private val emptySecretTokenHeader = RawHeader(SecretTokenHeader, "")
-  private val incorrectSecretTokenHeader = RawHeader(SecretTokenHeader, "DeadBeef")
-  private val secretTokenHeader = RawHeader(SecretTokenHeader, slickurl.AppConfig.apiSecret)
+class UserServiceSpec extends ShortenerServiceSpec with UserService {
 
   "User service" should {
 
-    "should reject non-authenticated POST requests to the token path" in {
-      Post("/token") ~> sealRoute(userRoute) ~> check (status === BadRequest)
-      Post("/token") ~> addHeader(nullSecretTokenHeader) ~> sealRoute(userRoute) ~> check (
-        status === Unauthorized
-      )
-      Post("/token") ~> addHeader(emptySecretTokenHeader) ~> sealRoute(userRoute) ~> check (
-        status === Unauthorized
-      )
-      Post("/token") ~> addHeader(incorrectSecretTokenHeader) ~> sealRoute(userRoute) ~> check (
-        status === Unauthorized
-      )
+    "should generate tokens for authenticated users" in new AkkaTestkitSpecs2Support with UserRepositoryMock {
+      private val repoMock = createNewUserMock(tokenUid)
+      mediator ! Subscribe(tokenTopic, tokenGroup, repoMock)
+      expectMsgType[SubscribeAck]
+
+      checkWithToken(Post("/token"), userRoute) {
+        val jwtClaim = JWTUtils.subjectForToken(entity.asString)
+        jwtClaim should beSuccessfulTry
+        jwtClaim.get.subject should beSome(tokenUid.id)
+      }
+
+      mediator ! Unsubscribe(tokenTopic, tokenGroup, repoMock)
     }
 
-    "should reject non-authenticated GET requests to the token path" in {
-      Get("/token") ~> sealRoute(userRoute) ~> check (status === BadRequest)
-      Get("/token") ~> addHeader(nullSecretTokenHeader) ~> sealRoute(userRoute) ~> check (
-        status === Unauthorized
-      )
-      Get("/token") ~> addHeader(emptySecretTokenHeader) ~> sealRoute(userRoute) ~> check (
-        status === Unauthorized
-      )
-      Get("/token") ~> addHeader(incorrectSecretTokenHeader) ~> sealRoute(userRoute) ~> check (
-        status === Unauthorized
-      )
+    "not allow GET requests to the token path" in {
+      Get("/token") ~> sealRoute(userRoute) ~> check (status === MethodNotAllowed)
     }
 
-    "support GetUser requests to the token path" in {
-      Get("/token", GetUser(-1)) ~> addHeader(secretTokenHeader) ~> userRoute ~> check (true)
-    }
-
-    "return a MethodNotAllowed error for PUT requests to the token path" in {
+    "not allow PUT requests to the token path" in {
       Put("/token") ~> sealRoute(userRoute) ~> check (status === MethodNotAllowed)
     }
 
-    "return a MethodNotAllowed error for DELETE requests to the token path" in {
+    "not allow DELETE requests to the token path" in {
       Delete("/token") ~> sealRoute(userRoute) ~> check (status === MethodNotAllowed)
     }
 
-    "return a MethodNotAllowed error for OPTIONS requests to the token path" in {
+    "not allow OPTIONS requests to the token path" in {
       Options("/token") ~> sealRoute(userRoute) ~> check (status === MethodNotAllowed)
     }
 
-    "return a MethodNotAllowed error for HEAD requests to the token path" in {
+    "not allow HEAD requests to the token path" in {
       Head("/token") ~> sealRoute(userRoute) ~> check (status === MethodNotAllowed)
     }
 
-    "return a MethodNotAllowed error for PATCH requests to the token path" in {
+    "not allow PATCH requests to the token path" in {
       Patch("/token") ~> sealRoute(userRoute) ~> check (status === MethodNotAllowed)
     }
   }
 
   override def actorRefFactory: ActorSystem = system
-  private val testProbe = TestProbe()
-  override val mediator: ActorRef = testProbe.ref
+  override val mediator: ActorRef = DistributedPubSub(system).mediator
 }

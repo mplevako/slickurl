@@ -2,10 +2,10 @@ include "db"
 include "akka"
 
 app{
-  id.length = 56 #must be greater than 0 and less or equal to the size of Long
-
-  #top secret
-  api.secret = "0mg,SoS1ick!"
+  #path to a PKCS8 encoded RSA private key that will be used for token generation
+  #api.privatekey = "/path/to/slickurl.PKCS8.encoded.private.key"
+  #path to a X509 encoded RSA public key that will be used for token verification and decoding
+  #api.publickey  = "/path/to/slickurl.X509.encoded.public.key"
 
   #alphabet for url encoding
   #this one lacks hard to distinguish symbols 1,0,l,O,o
@@ -23,7 +23,7 @@ app{
   }
 
   topics {
-    user.repo = user-repo
-    link.repo = link-repo
+    token = token
+    link  = link
   }
 }

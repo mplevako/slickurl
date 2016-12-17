@@ -10,7 +10,7 @@ import slick.dbio.DBIO._
 import slick.driver.JdbcProfile
 import slick.jdbc.meta.MTable
 import slickurl.actor.{LinkRepo, Shortener, UserRepo}
-import slickurl.AppConfig._
+import slickurl.AppProps._
 import slickurl.domain.repository._
 import spray.can.Http
 
@@ -58,7 +58,7 @@ class UserRepositoryApp(val system: ActorSystem) extends UserTable {
 }
 
 class LinkRepositoryApp(implicit val system: ActorSystem) extends LinkTable with FolderTable
-                                                                  with ClickTable{
+                                                                  with ClickTable {
 
   override val profile: JdbcProfile = slick.driver.PostgresDriver
   override val db: profile.api.Database = profile.api.Database.forConfig("db.links")
@@ -76,10 +76,11 @@ class LinkRepositoryApp(implicit val system: ActorSystem) extends LinkTable with
   system.actorOf(Props(classOf[LinkRepoFactory]), name = "link-repo")
 }
 
-class UserRepoFactory extends IndirectActorProducer{
+class UserRepoFactory extends IndirectActorProducer {
   override def actorClass: Class[UserRepo] = classOf[UserRepo]
 
   override def produce(): Actor = new UserRepo with UserRepositoryComponent with UserTable {
+
     override val profile: JdbcProfile = slick.driver.PostgresDriver
     override val db: profile.api.Database = profile.api.Database.forConfig("db.users")
     override val userRepository: UserRepository = new UserRepositoryImpl
@@ -92,6 +93,7 @@ class LinkRepoFactory extends IndirectActorProducer {
 
   override def produce(): Actor = new LinkRepo with LinkRepositoryComponent with LinkTable
                                                with FolderTable with ClickTable {
+
     override val profile: JdbcProfile = slick.driver.PostgresDriver
     override val db: profile.api.Database = profile.api.Database.forConfig("db.links")
     override val linkRepository: LinkRepository = new LinkRepositoryImpl

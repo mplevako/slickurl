@@ -4,13 +4,23 @@
 # IntelliJ
 .idea/
 
-# AKKA specific
+# Akka specific
 logs/
 
-# sbt specific
+# SBT specific
 .cache/
 .history/
 .lib/
 target/
 lib_managed/
 project/
+
+# Private/public key specific
+*.pem
+*.key
+*.der
+*.pub
+
+# Ignore custom configuration files
+*.conf
+!akka.conf

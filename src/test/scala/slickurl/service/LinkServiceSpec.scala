@@ -1,33 +1,67 @@
-package slickurl.service;
+package slickurl.service
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.testkit.TestProbe
-import org.specs2.mock.Mockito
-import org.specs2.mutable.Specification
+import akka.cluster.pubsub.DistributedPubSub
+import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import spray.http.StatusCodes._
-import spray.testkit.Specs2RouteTest
+import slickurl.AppProps.linkTopic
+import slickurl.actor.{AkkaTestkitSpecs2Support, Clck}
+import slickurl.mock.LinkRepositoryMock
 
-class LinkServiceSpec extends Specification with Specs2RouteTest with LinkService with Mockito {
+class LinkServiceSpec extends ShortenerServiceSpec with LinkService {
+
+  sequential
 
   "Link service" should {
-    "support ShortenLink POST requests to the link path" in {
-      Post("/link", ShortenLink("token", "url", None, None)) ~> linkRoute ~> check( true )
+    "shorten links for authenticated users" in new AkkaTestkitSpecs2Support with LinkRepositoryMock {
+      private val repoMock = shortenUrlMock(tokenUid)
+      mediator ! Subscribe(linkTopic, repoMock)
+      expectMsgType[SubscribeAck]
+
+      checkWithToken(Post("/link", ShortenLink(mockURL, Option(mockFolderId))), linkRoute) {
+        responseAs[Link] should_== Link(mockURL, mockCode)
+      }
+
+      mediator ! Unsubscribe(linkTopic, repoMock)
     }
 
-    "support ListLinks GET requests to the link path" in {
-      Get("/link", ListLinks("token", None, None)) ~> linkRoute ~> check( true )
+    "list links of authenticated users" in new AkkaTestkitSpecs2Support with LinkRepositoryMock {
+      private val repoMock = listLinksMock(tokenUid)
+      mediator ! Subscribe(linkTopic, repoMock)
+      expectMsgType[SubscribeAck]
+
+      checkWithToken(Get("/link", ListLinks(None, None)), linkRoute) {
+        responseAs[Seq[Link]] should_== Seq(Link(mockURL, mockCode))
+      }
+
+      mediator ! Unsubscribe(linkTopic, repoMock)
     }
 
-    "support PassThrough POST requests to the link/$code path" in {
-      Post("/link/code", PassThrough("token", "127.0.0.1")) ~> linkRoute ~> check( true )
+    "return link summary for a link with a given code of an authenticated user" in new AkkaTestkitSpecs2Support with LinkRepositoryMock {
+      private val repoMock = linkSummaryMock(tokenUid)
+      mediator ! Subscribe(linkTopic, repoMock)
+      expectMsgType[SubscribeAck]
+
+      checkWithToken(Get(s"/link/$mockCode"), linkRoute) {
+        responseAs[LinkSummary] should_== slickurl.service.LinkSummary(
+          Link(mockURL, mockCode), Option(mockFolderId), mockClickCount)
+      }
+
+      mediator ! Unsubscribe(linkTopic, repoMock)
     }
 
-    "support GetLinkSummary GET requests to the link/$code path" in {
-      Get("/link/code", GetLinkSummary("token")) ~> linkRoute ~> check( true )
+    "list clicks of a link with a given code of an authenticated user" in new AkkaTestkitSpecs2Support with LinkRepositoryMock {
+      private val repoMock = listClicksMock(tokenUid)
+      mediator ! Subscribe(linkTopic, repoMock)
+      expectMsgType[SubscribeAck]
+
+      checkWithToken(Get(s"/link/$mockCode/clicks", ListClicks(None, None)), linkRoute) {
+        responseAs[Seq[Clck]] should_== Seq(Clck(mockClick.date, mockClick.referrer, mockClick.remote_ip))
+      }
     }
 
-    "support ListClicks GET requests to the link/$code/clicks path" in {
-      Get("/link/code/clicks", ListClicks("token", None, None)) ~> linkRoute ~> check( true )
+    "pass through POST requests for a given link code" in {
+      Post("/link/code", PassThrough("referrer", "127.0.0.1")) ~> linkRoute ~> check( true )
     }
 
     "return a MethodNotAllowed error for PUT requests to the link path" in {
@@ -52,6 +86,5 @@ class LinkServiceSpec extends Specification with Specs2RouteTest with LinkServic
   }
 
   override def actorRefFactory: ActorSystem = system
-  val testProbe = TestProbe()
-  override val mediator: ActorRef = testProbe.ref
+  override val mediator: ActorRef = DistributedPubSub(system).mediator
 }

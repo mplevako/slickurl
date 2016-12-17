@@ -1,21 +1,40 @@
 package slickurl.service
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.testkit.TestProbe
-import org.specs2.mock.Mockito
-import org.specs2.mutable.Specification
+import akka.cluster.pubsub.DistributedPubSub
+import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
+import slickurl.AppProps.linkTopic
+import slickurl.actor.AkkaTestkitSpecs2Support
+import slickurl.mock.LinkRepositoryMock
 import spray.http.StatusCodes._
-import spray.testkit.Specs2RouteTest
 
-class FolderServiceSpec extends Specification with Specs2RouteTest with FolderService with Mockito {
+class FolderServiceSpec extends ShortenerServiceSpec with FolderService {
+
+  sequential
 
   "Folder service" should {
-    "support ListFolders requests to the folder path" in {
-      Get("/folder", ListFolders("token")) ~> folderRoute ~> check { true }
+    "list folders for authenticated users" in new AkkaTestkitSpecs2Support with LinkRepositoryMock {
+      private val repoMock = listFoldersMock(tokenUid)
+      mediator ! Subscribe(linkTopic, repoMock)
+      expectMsgType[SubscribeAck]
+
+      checkWithToken(Get("/folder"), folderRoute) {
+        responseAs[Seq[Folder]] should_== Seq(Folder(mockFolderId, mockFolderTitle))
+      }
+
+      mediator ! Unsubscribe(linkTopic, repoMock)
     }
 
-    "support ListLinks GET requests to the folder/id path" in {
-      Get("/folder/1", ListLinks("token", None, None)) ~> sealRoute(folderRoute) ~> check( true )
+    "list links in a given folder of an authenticated user" in new AkkaTestkitSpecs2Support with LinkRepositoryMock {
+      private val repoMock = listLinksMock(tokenUid, Option(mockFolderId))
+      mediator ! Subscribe(linkTopic, repoMock)
+      expectMsgType[SubscribeAck]
+
+      checkWithToken(Get(s"/folder/$mockFolderId", ListLinks(None, None)), folderRoute) {
+        responseAs[Seq[Link]] should_== Seq(Link(mockURL, mockCode))
+      }
+
+      mediator ! Unsubscribe(linkTopic, repoMock)
     }
 
     "return a MethodNotAllowed error for POST requests to the folder path" in {
@@ -44,7 +63,6 @@ class FolderServiceSpec extends Specification with Specs2RouteTest with FolderSe
   }
 
   override def actorRefFactory: ActorSystem = system
-  val testProbe = TestProbe()
-  override val mediator: ActorRef = testProbe.ref
+  override val mediator: ActorRef = DistributedPubSub(system).mediator
 }
 

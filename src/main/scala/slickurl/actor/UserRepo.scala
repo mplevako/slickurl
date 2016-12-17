@@ -4,9 +4,8 @@ import akka.actor.Actor
 import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck}
 import akka.pattern._
-import slickurl.domain.model.{Error, ErrorCode}
 import slickurl.domain.repository.UserRepositoryComponent
-import slickurl.AppConfig._
+import slickurl.AppProps._
 
 trait UserRepo extends Actor {
   implicit private val ec = context.dispatcher
@@ -14,27 +13,14 @@ trait UserRepo extends Actor {
   val userRepository: UserRepositoryComponent#UserRepository
   private val mediator = DistributedPubSub(context.system).mediator
 
-  mediator ! Subscribe(userRepoTopic, self)
+  mediator ! Subscribe(tokenTopic, tokenGroup, self)
 
   def receive: Receive = {
-    case SubscribeAck(Subscribe(`userRepoTopic`, None, `self`)) => context become ready
+    case SubscribeAck(Subscribe(`tokenTopic`, `tokenGroup`, `self`)) => context become ready
   }
 
   def ready: Receive = {
-    case CreateNewUser(secret, replyTo) if secret != apiSecret =>
-      replyTo ! Error(ErrorCode.WrongSecret)
-
-    case GetUser(_, secret, replyTo) if secret != apiSecret =>
-      replyTo ! Error(ErrorCode.WrongSecret)
-
-    case CreateNewUser(secret, replyTo) if secret == apiSecret =>
-      userRepository.createNewUser() pipeTo replyTo
-
-    case GetUser(userId, secret, replyTo) if secret == apiSecret =>
-      userRepository.getUser(userId) pipeTo replyTo
-
-    case GetUserWithToken(token, replyTo, payLoad) =>
-      val userForToken = userRepository.userForToken(token) map(UserForToken(_, payLoad))
-      userForToken pipeTo replyTo
+    case CreateNewUser =>
+      userRepository.createNewUser() pipeTo sender()
   }
 }

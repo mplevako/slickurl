@@ -2,7 +2,7 @@ package slickurl.service
 
 import akka.actor.{Actor,  ReceiveTimeout}
 import org.json4s.{DefaultFormats, Formats}
-import slickurl.AppConfig._
+import slickurl.AppProps._
 import slickurl.domain.model.{Error, ErrorCode}
 import spray.http.StatusCodes
 import spray.httpx.Json4sSupport
@@ -29,7 +29,6 @@ class ServiceCtxHandler(val ctx: RequestContext) extends Actor with Json4sSuppor
   def onError(code: String): Unit = {
     context.setReceiveTimeout(Duration.Undefined)
     code match {
-      case ErrorCode.WrongSecret | ErrorCode.InvalidToken => ctx.complete(StatusCodes.Unauthorized ,code)
       case ErrorCode.InvalidFolder | ErrorCode.CodeTaken => ctx.complete(StatusCodes.BadRequest ,code)
       case ErrorCode.Unknown => ctx.complete(StatusCodes.InternalServerError ,code)
       case ErrorCode.NonExistentCode => ctx.complete(StatusCodes.NotFound, code)

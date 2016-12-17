@@ -2,48 +2,26 @@ package slickurl.service
 
 import akka.actor.Props
 import akka.cluster.pubsub.DistributedPubSubMediator.Publish
-import slickurl.AppConfig._
-import slickurl.domain.model.User
-import spray.routing.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
+import slickurl.AppProps._
+import slickurl.JWTUtils
+import slickurl.domain.model.UserID
+import spray.http._
 import spray.routing.directives.DetachMagnet
-import spray.routing.{AuthenticationFailedRejection, RequestContext, Route}
+import spray.routing.{RequestContext, Route}
 
 import scala.concurrent.duration._
 
-private[slickurl] case class GetUser(user_id: Int)
-
 trait UserService extends ShortenerService {
-  protected val SecretTokenHeader = "X-Secret-Token"
-
   val userRoute: Route = {
     path("token") {
       post {
-        authenticatedRoute { secret =>
+        userID { uid =>
           detach(DetachMagnet.fromUnit(())) { ctx =>
-            val replyTo = actorRefFactory.actorOf(Props(classOf[UserServiceCtxHandler], ctx))
-            mediator ! Publish(userRepoTopic, slickurl.actor.CreateNewUser(secret, replyTo))
-          }
-        }
-      } ~
-      get {
-        authenticatedRoute { secret =>
-          entity(as[GetUser]) { getUser: GetUser =>
-            detach(DetachMagnet.fromUnit(())) { ctx =>
-              val replyTo = actorRefFactory.actorOf(Props(classOf[UserServiceCtxHandler], ctx))
-              mediator ! Publish(userRepoTopic, slickurl.actor.GetUser(getUser.user_id, secret, replyTo))
-            }
+            implicit val replyTo = actorRefFactory.actorOf(Props(classOf[UserServiceCtxHandler], ctx))
+            mediator ! Publish(tokenTopic, slickurl.actor.CreateNewUser, sendOneMessageToEachGroup = true)
           }
         }
       }
-    }
-  }
-
-  private def authenticatedRoute(secretRoute: String => Route): Route = {
-    headerValueByName(SecretTokenHeader) { secret =>
-      if (secret == null || secret.isEmpty) reject(AuthenticationFailedRejection(CredentialsMissing, List.empty))
-      else if (secret != apiSecret)
-        reject(AuthenticationFailedRejection(CredentialsRejected, List.empty))
-      else secretRoute(secret)
     }
   }
 }
@@ -51,9 +29,10 @@ trait UserService extends ShortenerService {
 class UserServiceCtxHandler(override val ctx: RequestContext) extends ServiceCtxHandler(ctx) {
 
   override def receive: Receive = super.receive orElse {
-    case Right(User(_, token)) =>
+    case Right(UserID(userId)) =>
       context.setReceiveTimeout(Duration.Undefined)
-      ctx.complete(token)
+      ctx.complete(HttpResponse(entity = HttpEntity(JWTUtils.tokenForSubject(userId))).withHeaders(
+                                new HttpHeaders.`Content-Type`(ContentTypes.`text/plain`)))
       context.stop(self)
   }
 }

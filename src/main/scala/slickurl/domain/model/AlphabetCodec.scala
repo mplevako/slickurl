@@ -2,8 +2,10 @@ package slickurl.domain.model
 
 object AlphabetCodec {
 
-  def encode(alphabet: String, number: Long): String = {
-    val base   = alphabet.length
+  import slickurl.AppProps.encodingAlphabet
+
+  def encode(number: Long): String = {
+    val base     = encodingAlphabet.length
     val encoding = StringBuilder.newBuilder
     var (quotient, reminder) = (number, 0L)
 
@@ -11,15 +13,14 @@ object AlphabetCodec {
     do {
       reminder = remainderUnsigned(quotient, base)
       quotient = divideUnsigned(quotient, base)
-      encoding += alphabet.charAt(reminder.toInt)  //alphabet.length is Int
+      encoding += encodingAlphabet.charAt(reminder.toInt)  //alphabet.length is Int
     } while(quotient != 0L)
     encoding.reverseContents().toString()
   }
 
-  def decode(alphabet: String, encodedNumber: String): Long = {
-    require(encodedNumber != null && alphabet != null)
-    require(!encodedNumber.isEmpty && !alphabet.isEmpty)
+  def decode(encodedNumber: String): Long = {
+    require(encodedNumber != null && !encodedNumber.isEmpty)
 
-    (BigInt(0) /: encodedNumber) { (x, c) => x * alphabet.length + alphabet.indexOf(c) }.toLong
+    (BigInt(0) /: encodedNumber) { (x, c) => x * encodingAlphabet.length + encodingAlphabet.indexOf(c) }.toLong
   }
 }
