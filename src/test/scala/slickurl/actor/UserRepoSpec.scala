@@ -14,11 +14,13 @@ class UserRepoSpec extends Specification with NoTimeConversions {
 
   "UserRepo" should {
     "return the user with the given existent token" in new AkkaTestkitSpecs2Support with UserRepositoryMock {
-      private val repoMockA = createNewUserMock(uid)
+      override protected val mockShardId: Long = shardId
+
+      private val repoMock  = createNewUserMock(uid)
       private val repoMockB = createNewUserMock(uid)
       private val mediator  = DistributedPubSub(system).mediator
 
-      mediator ! Subscribe(tokenTopic, tokenGroup, repoMockA)
+      mediator ! Subscribe(tokenTopic, tokenGroup, repoMock)
       expectMsgType[SubscribeAck]
       mediator ! Subscribe(tokenTopic, tokenGroup, repoMockB)
       expectMsgType[SubscribeAck]
@@ -26,9 +28,10 @@ class UserRepoSpec extends Specification with NoTimeConversions {
       mediator ! Publish(tokenTopic, CreateNewUser, sendOneMessageToEachGroup = true)
       expectMsg(Right(uid))
       expectNoMsg
-      there was one(repositoryMock).createNewUser()
+      there was one(repoMock.underlyingActor.userRepository).createNewUser(shardId)
     }
   }
 
+  protected def shardId: Long = 1L
   private val uid = UserID("cafed00d")
 }

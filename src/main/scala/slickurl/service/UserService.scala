@@ -15,7 +15,7 @@ trait UserService extends ShortenerService {
   val userRoute: Route = {
     path("token") {
       post {
-        userID { uid =>
+        shardAndUserID { _ =>
           detach(DetachMagnet.fromUnit(())) { ctx =>
             implicit val replyTo = actorRefFactory.actorOf(Props(classOf[UserServiceCtxHandler], ctx))
             mediator ! Publish(tokenTopic, slickurl.actor.CreateNewUser, sendOneMessageToEachGroup = true)

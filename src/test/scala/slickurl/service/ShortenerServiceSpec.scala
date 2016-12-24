@@ -3,7 +3,7 @@ package slickurl.service
 import org.specs2.matcher.MatchResult
 import org.specs2.mutable.Specification
 import slickurl.JWTUtils
-import slickurl.domain.model.UserID
+import slickurl.domain.model.{AlphabetCodec, UserID}
 import spray.http.HttpHeaders.RawHeader
 import spray.http.HttpRequest
 import spray.http.StatusCodes._
@@ -11,7 +11,8 @@ import spray.routing.Route
 import spray.testkit.Specs2RouteTest
 
 trait ShortenerServiceSpec extends Specification with Specs2RouteTest with ShortenerService {
-  protected val tokenUid = UserID("N1ceD00d")
+  protected def shardId: Long
+  protected def tokenUid = UserID(AlphabetCodec.packAndEncode(shardId)(1L))
   protected val nullSecretTokenHeader = RawHeader(TokenHeader, null)
   protected val emptySecretTokenHeader = RawHeader(TokenHeader, "")
   protected val incorrectSecretTokenHeader = RawHeader(TokenHeader, "DeadBeef")

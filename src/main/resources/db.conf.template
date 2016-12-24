@@ -5,25 +5,29 @@ db {
     inc   = 1
   }
 
-  users {
-    dataSourceClass = org.postgresql.ds.PGSimpleDataSource
-    properties = {
-      databaseName = <userdb>
-      user         = <user>
-      password     = <pwd>
-    }
-    connectionTestQuery="select 1"
-    numThreads = <threads number>
-  }
+  #schema.name=
 
-  links {
-    dataSourceClass = org.postgresql.ds.PGSimpleDataSource
-    properties = {
-      databaseName = <linksdb>
-      user         = <user>
-      password     = <pwd>
-    }
-    connectionTestQuery="select 1"
-    numThreads = <threads number>
+  shards{
+      A {
+        dataSourceClass = org.postgresql.ds.PGSimpleDataSource
+        properties = {
+            databaseName = <db>
+            user         = <user>
+            password     = <pwd>
+        }
+        connectionTestQuery="select 1"
+        numThreads = <threads number>
+      }
+
+      Z {
+        dataSourceClass = org.postgresql.ds.PGSimpleDataSource
+        properties = {
+            databaseName = <db>
+            user         = <user>
+            password     = <pwd>
+        }
+        connectionTestQuery="select 1"
+        numThreads = <threads number>
+      }
   }
 }

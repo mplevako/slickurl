@@ -5,7 +5,6 @@ import java.util.Date
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterExample
 import slick.driver.JdbcProfile
-import slickurl.AppProps._
 import slickurl.DbProps._
 import slickurl.domain.model._
 
@@ -19,10 +18,11 @@ class LinkRepositorySpec extends Specification with BeforeAfterExample with Link
 
   ".shortenUrl" should {
     "return a short link" in {
-      linkRepository.shortenUrl(nonExistentLink.uid, nonExistentLink.url, nonExistentLink.folderId) map { result =>
-        result must beRight[Link]
-        result.right.get must_== nonExistentLink.copy(code = encodedCodeSeqStartVal)
-      } await
+      linkRepository.shortenUrl(mockShardId, nonExistentLink.uid, nonExistentLink.url, nonExistentLink.folderId) map
+        { result =>
+          result must beRight[Link]
+          result.right.get must_== nonExistentLink.copy(code = encodedCodeSeqStartVal)
+        } await
     }
   }
 
@@ -116,6 +116,8 @@ class LinkRepositorySpec extends Specification with BeforeAfterExample with Link
     }
   }
 
+  private val mockShardId: Long = 1L
+
   override val profile: JdbcProfile = slick.driver.H2Driver
   override val linkRepository: LinkRepository = new LinkRepositoryImpl
   override val db: profile.api.Database = profile.api.Database.forURL("jdbc:h2:mem:links;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver")
@@ -130,14 +132,14 @@ class LinkRepositorySpec extends Specification with BeforeAfterExample with Link
   private val existentLink: Link     = Link(iceBuddha, "https://www.google.com", "yeah", Option(1L))
   private val nonExistentLink: Link  = Link(iceBuddha, "https://www.google.com", "", Option(1L))
   private val existentClick: Click   = Click(existentLink.code, new Date(), referrer, remoteIp)
-  private val encodedCodeSeqStartVal = AlphabetCodec.encode(idSequenceStart)
+  private val encodedCodeSeqStartVal = AlphabetCodec.packAndEncode(mockShardId)(idSequenceStart)
   private val encodedLongMaxVal = AlphabetCodec.encode(Long.MaxValue)
 
   override def before: Unit = {
     import profile.api._
 
     val initAction = db run {
-      (folders.schema ++ idSequence.schema ++ links.schema ++ clicks.schema).create >>
+      (folders.schema ++ linkIdSequence.schema ++ links.schema ++ clicks.schema).create >>
         folders.forceInsertAll(Seq(
           existentFolder,
           Folder(2L, iceBuddha, "B"),
@@ -164,7 +166,7 @@ class LinkRepositorySpec extends Specification with BeforeAfterExample with Link
   override def after: Unit = {
     import profile.api._
 
-    val disposeAction = db run (clicks.schema ++ folders.schema ++ links.schema ++ idSequence.schema).drop
+    val disposeAction = db run (clicks.schema ++ links.schema ++ linkIdSequence.schema ++ folders.schema).drop
     Await.result(disposeAction, Duration.Inf)
   }
 }

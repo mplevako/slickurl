@@ -19,24 +19,26 @@ trait FolderService extends ShortenerService {
   val folderRoute: Route = {
     path("folder") {
       get {
-        userID { uid =>
+        shardAndUserID { case (sid, uid) =>
           detach(DetachMagnet.fromUnit(())) { ctx =>
+            val msg = sa.ListFolders(sid, uid)
             implicit val replyTo = actorRefFactory.actorOf(Props(classOf[FolderServiceCtxHandler], ctx))
-            mediator ! Publish(linkTopic, sa.ListFolders(uid))
+            mediator ! Publish(linkTopic, msg)
           }
         }
       }
     } ~
     path( "folder" / LongNumber) { fid =>
       get {
-        userID { uid =>
+        shardAndUserID { case (sid, uid) =>
           entity(as[ListLinks]) { listLinks: ListLinks =>
             if(listLinks.offset.getOrElse(0L) < 0L || listLinks.limit.getOrElse(0L) < 0L)
               complete(StatusCodes.BadRequest)
             else
               detach(DetachMagnet.fromUnit(())) { ctx =>
+                val msg = sa.ListLinks(sid, uid, Some(fid), listLinks.offset, listLinks.limit)
                 implicit val replyTo = actorRefFactory.actorOf(Props(classOf[FolderServiceCtxHandler], ctx))
-                mediator ! Publish(linkTopic, sa.ListLinks(uid, Some(fid), listLinks.offset, listLinks.limit))
+                mediator ! Publish(linkTopic, msg)
               }
           }
         }

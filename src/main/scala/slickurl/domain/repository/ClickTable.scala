@@ -4,11 +4,12 @@ import java.sql.Timestamp
 import java.util.Date
 
 import slickurl.domain.model.Click
+import slickurl.DbProps._
 
 trait ClickTable extends Profile { this: LinkTable =>
   import profile.api._
 
-  class Clicks(tag: Tag) extends Table[Click](tag, "CLICK") {
+  class Clicks(tag: Tag) extends Table[Click](tag, schemaName, clickTableName) {
 
     implicit private val DateMapper = MappedColumnType.base[Date, Timestamp](
       d => new Timestamp(d.getTime), t => new Date(t.getTime)
@@ -19,7 +20,8 @@ trait ClickTable extends Profile { this: LinkTable =>
     def referrer  = column[Option[String]] ("REFERRER")
     def remote_ip = column[Option[String]] ("REMOTE_IP")
 
-    def link = foreignKey("LINK_FK", code, links)(_.code, onUpdate = ForeignKeyAction.Restrict, onDelete = ForeignKeyAction.Restrict)
+    def link = foreignKey("LINK_FK", code, links)(_.code, onUpdate = ForeignKeyAction.Restrict,
+                                                          onDelete = ForeignKeyAction.Restrict)
     def link_fk_idx = index("CLICK_CODE_IDX", code)
 
     def * = (code, date, referrer, remote_ip) <> (Click.tupled, Click.unapply)

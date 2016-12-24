@@ -2,6 +2,8 @@ include "db"
 include "akka"
 
 app{
+  id.length = 56 #must be greater than 0 and less or equal to the size of Long
+
   #path to a PKCS8 encoded RSA private key that will be used for token generation
   #api.privatekey = "/path/to/slickurl.PKCS8.encoded.private.key"
   #path to a X509 encoded RSA public key that will be used for token verification and decoding

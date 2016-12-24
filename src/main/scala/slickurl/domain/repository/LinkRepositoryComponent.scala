@@ -13,7 +13,7 @@ import scala.util.{Failure, Success}
 trait LinkRepositoryComponent {
   this: ClickTable with LinkTable with FolderTable =>
 
-  val linkRepository: LinkRepository
+  protected def linkRepository: LinkRepository
 
   trait LinkRepository {
 
@@ -22,7 +22,7 @@ trait LinkRepositoryComponent {
     /**
      * returns CodeIsUsed if link.code is already used for this user + url + folder combination
      */
-    def shortenUrl(userId: UserID, url: String, folderId: Option[Long])(implicit ec: ExecutionContext): Future[Error Either Link]
+    def shortenUrl(inShard: Long, userId: UserID, url: String, folderId: Option[Long])(implicit ec: ExecutionContext): Future[Error Either Link]
 
     /**
      * returns links with untouched URLs
@@ -41,7 +41,7 @@ trait LinkRepositoryComponent {
     def linkSummary(userId: UserID, code: String)(implicit ec: ExecutionContext): Future[Error Either LinkSummary]
   }
 
-  class LinkRepositoryImpl extends LinkRepository with SQLStateErrorCodeTranslator {
+  protected class LinkRepositoryImpl extends LinkRepository with SQLStateErrorCodeTranslator {
 
     import links._
     import profile.api._
@@ -60,10 +60,10 @@ trait LinkRepositoryComponent {
     private def folderExists(userId: UserID, folderId: Long): DBIO[Boolean] =
       folders.filter(_.uid === userId).filter(_.id === folderId).exists.result
 
-    private def shorten(userId: UserID, url: String, folderId: Option[Long])
+    private def shorten(inShard: Long, userId: UserID, url: String, folderId: Option[Long])
                        (implicit ec: ExecutionContext): DBIOAction[Error Either Link, NoStream, All] =
-      idSequence.next.result flatMap { id =>
-        val code = AlphabetCodec.encode(id)
+      linkIdSequence.next.result flatMap { id =>
+        val code = AlphabetCodec.packAndEncode(inShard)(id)
         val link = Link(userId, url, code, folderId)
 
         (links += link).asTry map {
@@ -76,9 +76,9 @@ trait LinkRepositoryComponent {
      * returns CodeIsUsed if link.code is already used for this user + code + folder combination
      * link's URL have to be valid (e.g. punycoded), properly escaped and encoded
      */
-    override def shortenUrl(userId: UserID, url: String, folderId: Option[Long])
+    override def shortenUrl(inShard: Long, userId: UserID, url: String, folderId: Option[Long])
                            (implicit ec: ExecutionContext): Future[Error Either Link] = db run {
-      val shortenAction = shorten(userId, url, folderId)
+      val shortenAction = shorten(inShard, userId, url, folderId)
       folderId.fold(shortenAction) {
         folderExists(userId, _) flatMap {
           case false => successful(Left(Error(ErrorCode.InvalidFolder)))
@@ -118,11 +118,13 @@ trait LinkRepositoryComponent {
      * @return link url to pass through if it exists
      */
     override def passThrough(code: String, referrer: Option[String], remote_ip: Option[String])(implicit ec: ExecutionContext): Future[Error Either String] = db run {
-      urlForCode(code).map {
-        case None      => Left(Error(ErrorCode.NonExistentCode))
+      urlForCode(code).flatMap {
+        case None      => DBIO.successful(Left(Error(ErrorCode.NonExistentCode)))
         case Some(url) =>
-          clicks += Click(code, new Date(), referrer, remote_ip)
-          Right(url)
+          (clicks += Click(code, new Date(), referrer, remote_ip)).asTry.map {
+            case Success(_) => Right(url)
+            case Failure(t) => Left(translateException(t))
+          }
       }.transactionally.withTransactionIsolation(Serializable)
     }
 

@@ -1,12 +1,13 @@
 package slickurl.domain.repository
 
 import slickurl.domain.model.{Folder, UserID}
+import slickurl.DbProps._
 
 trait FolderTable extends Profile {
 
   import profile.api._
 
-  class Folders(tag: Tag) extends Table[Folder](tag, "FOLDER") {
+  class Folders(tag: Tag) extends Table[Folder](tag, schemaName, folderTableName) {
 
     def id    = column[Long]("ID")
     def uid   = column[UserID]("UID")

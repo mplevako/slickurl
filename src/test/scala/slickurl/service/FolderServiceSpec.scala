@@ -14,6 +14,7 @@ class FolderServiceSpec extends ShortenerServiceSpec with FolderService {
 
   "Folder service" should {
     "list folders for authenticated users" in new AkkaTestkitSpecs2Support with LinkRepositoryMock {
+      override def mockShardId: Long = shardId
       private val repoMock = listFoldersMock(tokenUid)
       mediator ! Subscribe(linkTopic, repoMock)
       expectMsgType[SubscribeAck]
@@ -26,6 +27,7 @@ class FolderServiceSpec extends ShortenerServiceSpec with FolderService {
     }
 
     "list links in a given folder of an authenticated user" in new AkkaTestkitSpecs2Support with LinkRepositoryMock {
+      override def mockShardId: Long = shardId
       private val repoMock = listLinksMock(tokenUid, Option(mockFolderId))
       mediator ! Subscribe(linkTopic, repoMock)
       expectMsgType[SubscribeAck]
@@ -62,6 +64,7 @@ class FolderServiceSpec extends ShortenerServiceSpec with FolderService {
     }
   }
 
+  override protected def shardId: Long = 1L
   override def actorRefFactory: ActorSystem = system
   override val mediator: ActorRef = DistributedPubSub(system).mediator
 }

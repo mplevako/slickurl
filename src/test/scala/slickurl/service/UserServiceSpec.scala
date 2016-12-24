@@ -6,6 +6,7 @@ import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, U
 import slickurl.AppProps.{tokenGroup, tokenTopic}
 import slickurl.JWTUtils
 import slickurl.actor.AkkaTestkitSpecs2Support
+import slickurl.domain.model.UserID
 import slickurl.mock.UserRepositoryMock
 import spray.http.StatusCodes._
 
@@ -14,16 +15,19 @@ class UserServiceSpec extends ShortenerServiceSpec with UserService {
   "User service" should {
 
     "should generate tokens for authenticated users" in new AkkaTestkitSpecs2Support with UserRepositoryMock {
-      private val repoMock = createNewUserMock(tokenUid)
+      override protected val mockShardId: Long = shardId
+
+      private val repoMock = createNewUserMock(mockUid)
       mediator ! Subscribe(tokenTopic, tokenGroup, repoMock)
       expectMsgType[SubscribeAck]
 
       checkWithToken(Post("/token"), userRoute) {
         val jwtClaim = JWTUtils.subjectForToken(entity.asString)
         jwtClaim should beSuccessfulTry
-        jwtClaim.get.subject should beSome(tokenUid.id)
+        jwtClaim.get.subject should beSome(mockUid.id)
       }
 
+      there was one(repoMock.underlyingActor.userRepository).createNewUser(shardId)(repoMock.dispatcher)
       mediator ! Unsubscribe(tokenTopic, tokenGroup, repoMock)
     }
 
@@ -52,6 +56,8 @@ class UserServiceSpec extends ShortenerServiceSpec with UserService {
     }
   }
 
+  override protected def shardId: Long = 1L
+  private val mockUid = UserID("cafed00d")
   override def actorRefFactory: ActorSystem = system
   override val mediator: ActorRef = DistributedPubSub(system).mediator
 }

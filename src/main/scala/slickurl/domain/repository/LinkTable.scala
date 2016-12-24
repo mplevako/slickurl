@@ -1,13 +1,14 @@
 package slickurl.domain.repository
 
 import slickurl.DbProps._
+import slickurl.AppProps._
 import slickurl.domain.model.{Link, UserID}
 
 trait LinkTable extends Profile { this: FolderTable =>
 
   import profile.api._
 
-  class Links(tag: Tag) extends Table[Link](tag, "LINK") {
+  class Links(tag: Tag) extends Table[Link](tag, schemaName, linkTableName) {
 
     def uid  = column[UserID] ("UID")
     def fid  = column[Option[Long]] ("FID")
@@ -25,11 +26,11 @@ trait LinkTable extends Profile { this: FolderTable =>
   }
 
   lazy val links = Links.links
-  lazy val idSequence = Links.idSequence
+  lazy val linkIdSequence = Links.idSequence
 
   private object Links {
     lazy val links = TableQuery[Links]
-    lazy val idSequence = Sequence[Long]("LINK_ID_SEQUENCE") start idSequenceStart inc idSequenceInc
+    lazy val idSequence = Sequence[Long](linkIdSequenceName) start idSequenceStart inc idSequenceInc min idSequenceStart max maxId
   }
 }
 

@@ -1,10 +1,12 @@
 package slickurl.domain.model
 
+import slickurl.AppProps
+
 object AlphabetCodec {
 
   import slickurl.AppProps.encodingAlphabet
 
-  def encode(number: Long): String = {
+  private[slickurl] def encode(number: Long): String = {
     val base     = encodingAlphabet.length
     val encoding = StringBuilder.newBuilder
     var (quotient, reminder) = (number, 0L)
@@ -18,9 +20,17 @@ object AlphabetCodec {
     encoding.reverseContents().toString()
   }
 
-  def decode(encodedNumber: String): Long = {
+  private[slickurl] def decode(encodedNumber: String): Long = {
     require(encodedNumber != null && !encodedNumber.isEmpty)
 
     (BigInt(0) /: encodedNumber) { (x, c) => x * encodingAlphabet.length + encodingAlphabet.indexOf(c) }.toLong
   }
+
+  private[slickurl] def packAndEncode(lo: Long)(hi: Long): String = {
+    val packedNumber = (hi << AppProps.shardIdLenght) | lo
+    AlphabetCodec.encode(packedNumber)
+  }
+
+  private[slickurl] def decodeLo(packedNumber: String): Long =
+    AlphabetCodec.decode(packedNumber) & AppProps.shardIdMask
 }

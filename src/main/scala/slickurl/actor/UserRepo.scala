@@ -1,16 +1,25 @@
 package slickurl.actor
 
-import akka.actor.Actor
+import akka.actor.Props
 import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck}
 import akka.pattern._
-import slickurl.domain.repository.UserRepositoryComponent
+import slick.driver.JdbcProfile
+import slickurl.domain.repository.{UserRepositoryComponent, UserTable}
 import slickurl.AppProps._
+import slickurl.actor.shard.Shard
 
-trait UserRepo extends Actor {
+object UserRepo {
+  def apply(shardId: Long, profile: JdbcProfile)(db: profile.api.Database): Props =
+    Props(classOf[UserRepo], shardId, profile, db)
+}
+
+class UserRepo(override val shardId: Long, override val profile: JdbcProfile,
+               override val db: JdbcProfile#Backend#Database)
+extends Shard with UserRepositoryComponent with UserTable {
   implicit private val ec = context.dispatcher
 
-  val userRepository: UserRepositoryComponent#UserRepository
+  override protected def userRepository: UserRepository = new UserRepositoryImpl
   private val mediator = DistributedPubSub(context.system).mediator
 
   mediator ! Subscribe(tokenTopic, tokenGroup, self)
@@ -21,6 +30,6 @@ trait UserRepo extends Actor {
 
   def ready: Receive = {
     case CreateNewUser =>
-      userRepository.createNewUser() pipeTo sender()
+      userRepository.createNewUser(shardId) pipeTo sender()
   }
 }
