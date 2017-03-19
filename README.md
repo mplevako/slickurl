@@ -1,10 +1,11 @@
 # About SlickURL
- SlickURL is a slick clusterable sharded RESTful service, that allows to shorten links, arrange them in folders,
- and gather click count and other statistics. It is Scala-based and uses Spray, Akka, Reactive Slick and distributed pub-sub.
+ SlickURL is a slick clusterable sharded RESTful service, whose core was written in September 2014 within the framework of a system design and coding interview.
+
+ The service allows to shorten links, arrange them in folders, and gather click count and other statistics. It is Scala-based and uses Spray, Akka, Reactive Slick and distributed pub-sub.
  
  Akka's clustering, distributed pub-sub as well as deployment support allow to decouple services and make them truly distributable.
  
- Spray together with detachable context handling actors allow http request processing to run smoothly in such
+ Spray together with detachable context handling actors allow HTTP request processing to run smoothly in such
  distributed and decoupled environment. Those actors are created for each request and eventually complete it
  either with timeouts or with responses to distributed messages sent over the cluster. Anyway requests
  are handled properly and the dedicated actors are stopped correctly so that there are no dangling ones.
@@ -12,15 +13,20 @@
  Finally, Reactive Slick allows of getting the best out of accessing a relational data store asynchronously.
  
 ## Config
- Start by copying *resources/application.conf.template* to *resources/application.conf* and *resources/db.conf.template* to *resources/db.conf*.
+ Start by copying *resources/application.conf.template* to *resources/application.conf* (**this file is also required by the tests**) and *resources/db.conf.template* to *resources/db.conf* (there is
+ a more succinct template file inside *test/resources* that will be enough for running the tests).
  Generate RSA private/public key pair, store them in PKCS8/X509 encoded formats and put their paths in the *api.privatekey*/*api.publickey* entries in *application.conf*.
  Fill the entries for shardA's and shardZ's data sources. Optionally set the *db.schema.name* if you want to work in a distinct schema.
 
- You can optionally change the alphabet (*app.encoding.alphabet*) used to shorten URLs (by default it lacks hard to distinguish symbols 1,0,l,O,o), http handler timeout (*app.http.handler.timeout*),
- the interface (*app.http.server.if*) and the port(*app.http.server.port*) to run the http server on. You can even change the distributed pub-sub topic names used to exchange users, links, folders,
+ You can optionally change the alphabet (*app.encoding.alphabet*) used to shorten URLs (by default it lacks hard to distinguish symbols 1,0,l,O,o), HTTP handler timeout (*app.http.handler.timeout*),
+ the interface (*app.http.server.if*) and the port(*app.http.server.port*) to run the HTTP server on. You can even change the distributed pub-sub topic names used to exchange users, links, folders,
  statistics as well as errors.
 
  There is also the *id.length* knob for fine tuning the shard and entity identifier sizes and layout. Adjust that if you really need to.
+ 
+ By default, requests are distributed between shards randomly, but you can change the logic by modifying `akka.cluster.pub-sub.routing-logic`.
+ 
+ Please also consider putting a reverse proxy (e.g. Nginx) in front of the cluster to at least have SSL offloading there, as SSL is not terminated at the application side). You would also appreciate extra load balancing being done at that point.
  
 ## Setup
  To build the project you should install [SBT](http://www.scala-sbt.org/). Having installed it simply type

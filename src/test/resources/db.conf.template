@@ -1,0 +1,6 @@
+db {
+  id.sequence {
+    start = 0
+    inc   = 1
+  }
+}
